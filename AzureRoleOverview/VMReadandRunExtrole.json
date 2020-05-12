@@ -1,0 +1,16 @@
+{
+    "Name": "VM Read and RunCommand Role",
+    "Id": null,
+    "IsCustom": true,
+    "Description": "This role can read VM objects and use the RunCommand action",
+    "Actions": [
+        "Microsoft.Compute/virtualMachines/runCommand/action",
+        "Microsoft.Compute/virtualMachines/read"
+    ],
+    "NotActions": [],
+    "DataActions": [],
+    "NotDataActions": [],
+    "AssignableScopes": [
+        "/subscriptions/466c1a5d-e93b-4138-91a5-670daf44b0f8"
+    ]
+}
