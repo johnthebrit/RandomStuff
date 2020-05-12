@@ -1,0 +1,15 @@
+{
+    "Name": "Network Peering Target Role",
+    "Id": null,
+    "IsCustom": true,
+    "Description": "Custom role to enable peering to target network",
+    "Actions": [
+        "Microsoft.Network/virtualNetworks/peer/action"
+    ],
+    "NotActions": [],
+    "DataActions": [],
+    "NotDataActions": [],
+    "AssignableScopes": [
+        "/subscriptions/466c1a5d-e93b-4138-91a5-670daf44b0f8"
+    ]
+}
