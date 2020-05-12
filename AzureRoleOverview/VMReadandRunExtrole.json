@@ -11,6 +11,6 @@
     "DataActions": [],
     "NotDataActions": [],
     "AssignableScopes": [
-        "/subscriptions/466c1a5d-e93b-4138-91a5-670daf44b0f8"
+        "/subscriptions/<subID>"
     ]
 }
