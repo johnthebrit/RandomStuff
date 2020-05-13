@@ -1,5 +1,5 @@
 Get-AzRoleDefinition | FT Name, IsCustom
-Get-AzRoleDefinition 'Network Peering' | convertto-json  # then write to file to change ID to null, change scope and details
+Get-AzRoleDefinition 'Network Peering Target Role' | convertto-json  # then write to file to change ID to null, change scope and details
 New-AzRoleDefinition -InputFile "networkpeerrole.json"
 New-AzRoleDefinition -InputFile "VMReadandRunExtrole.json"
 
