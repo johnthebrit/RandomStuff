@@ -7,13 +7,19 @@ $GitBasePath = 'C:\Users\john\OneDrive\projects\GIT\RandomStuff\DeclarativevsImp
 
 #ARM Template Demo
 
+#Show the whatif functionality
+New-AzResourceGroupDeployment -WhatIf `
+    -ResourceGroupName RG-SCUSARMStorage `
+    -TemplateFile "$GitBasePath\ARM\CreateStorage.json" `
+    -TemplateParameterFile "$GitBasePath\ARM\CreateStorage.parameters.json"
+
 #Deploy simple template creating a storage account
 New-AzResourceGroupDeployment -ResourceGroupName RG-SCUSARMStorage `
     -TemplateFile "$GitBasePath\ARM\CreateStorage.json" `
     -TemplateParameterFile "$GitBasePath\ARM\CreateStorage.parameters.json"
 
 #Run same template again but override the type of the storage account
-New-AzResourceGroupDeployment -ResourceGroupName RG-SCUSARMStorage `
+New-AzResourceGroupDeployment -WhatIf -ResourceGroupName RG-SCUSARMStorage `
     -TemplateFile "$GitBasePath\ARM\CreateStorage.json" `
     -TemplateParameterFile "$GitBasePath\ARM\CreateStorage.parameters.json" `
     -StorageAccountType 'Standard_GRS'
