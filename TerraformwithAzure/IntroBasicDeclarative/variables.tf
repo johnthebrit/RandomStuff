@@ -1,4 +1,5 @@
 variable "replicationType" {
-  type    = string
-  default = "LRS"
+  description = "The type of replication"
+  type        = string
+  default     = "LRS"
 }
