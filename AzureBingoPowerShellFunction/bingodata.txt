@@ -1,0 +1,50 @@
+Availability Set
+Virtual Machine
+VM Scale Set
+Public IP
+Managed Disk
+Image
+Gallery
+Disk Encryption Set
+Proximity Placement Group
+Availability Set
+Availability Zone
+Region
+Virtual Network
+Subnet
+ExpressRoute
+S2S VPN
+Gateway
+Peering
+Private Link
+Load Balancer
+App Gateway
+Function
+LogicApp
+Azure Firewall
+App Service Plan
+ASE
+Cosmos DB
+Azure AD
+Azure SQL Database
+Azure Synapse
+Azure Database
+PostgreSQL
+MariaDB
+MySQL
+Redis
+Azure Storage
+Azure Files
+Ultra Disk
+Azure DevOps
+GitHub Actions
+AKS
+Containers
+ACR
+ADH
+WVD
+Batch
+Windows
+B2B
+B2C
+AI
