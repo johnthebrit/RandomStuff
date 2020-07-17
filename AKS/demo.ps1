@@ -24,6 +24,7 @@ az aks create \
     --client-secret "<secret>" \
     --generate-ssh-keys
 
+
 az aks get-credentials --resource-group RG-AKS --name aks-ussc-cni1
 az aks get-credentials --resource-group RG-AKS-Kubenet --name aks-ussc-kubenet1
 
