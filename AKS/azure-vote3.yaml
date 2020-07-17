@@ -2,19 +2,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: azure-vote-back1
+  name: azure-vote3-back1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: azure-vote-back1
+      app: azure-vote3-back1
   template:
     metadata:
       labels:
-        app: azure-vote-back1
+        app: azure-vote3-back1
     spec:
       containers:
-      - name: azure-vote-back1
+      - name: azure-vote3-back1
         image: redis
         resources:
           requests:
@@ -30,29 +30,29 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: azure-vote-back1
+  name: azure-vote3-back1
 spec:
   ports:
   - port: 6379
   selector:
-    app: azure-vote-back1
+    app: azure-vote3-back1
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: azure-vote-front1
+  name: azure-vote3-front1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: azure-vote-front1
+      app: azure-vote3-front1
   template:
     metadata:
       labels:
-        app: azure-vote-front1
+        app: azure-vote3-front1
     spec:
       containers:
-      - name: azure-vote-front1
+      - name: azure-vote3-front1
         image: microsoft/azure-vote-front:v1
         resources:
           requests:
@@ -65,19 +65,19 @@ spec:
         - containerPort: 80
         env:
         - name: REDIS
-          value: "azure-vote-back1"
+          value: "azure-vote3-back1"
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: azure-vote-front1
+  name: azure-vote3-front1
   annotations:
     service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout: "4"
-#    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
 #    service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "svc"
 spec:
   type: LoadBalancer
   ports:
   - port: 80
   selector:
-    app: azure-vote-front1
+    app: azure-vote3-front1
