@@ -99,6 +99,8 @@ Get-AzLocation
 Get-AzVMSize -Location southcentralus
 #Currently using against allowed core counts
 Get-AzVMUsage -Location southcentralus | Sort-Object -Property CurrentValue -Descending
+#Check for VM SKUs supported in Availability Zones
+Get-AzComputeResourceSku | where Locations -EQ "eastus2"
 
 #Looking at images in marketplace
 $loc = 'SouthCentralUS'
