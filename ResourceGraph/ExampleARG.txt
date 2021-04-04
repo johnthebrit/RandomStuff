@@ -17,6 +17,13 @@ Resources
 	| project VMName = name, CompName = properties.osProfile.computerName, OSType =  properties.storageProfile.osDisk.osType, RGName = resourceGroup, SubName, SubID = subscriptionId
 
 
+* VM by power state
+
+Resources
+    | where type == 'microsoft.compute/virtualmachines'
+    | summarize count() by tostring(properties.extended.instanceView.powerState.code)
+
+
 * Unused Managed Disks
 
 Resources | 
