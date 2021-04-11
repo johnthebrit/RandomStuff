@@ -1,0 +1,90 @@
+#Using REST behind the scenes
+az group list --debug --output table
+
+
+#Check the version
+az version
+#Get latest version
+az upgrade
+#this also upgrades any extensions install
+az extension list
+#Automatic upgrade
+az config get
+az config set auto-upgrade.enable=yes  #automatic upgrade enabled
+az config set auto-upgrade.prompt=no   #don't prompt
+
+
+#authentication
+az login  #login via local browser. Can add --tenant <tenant> to use different tenant such as if a guest etc
+#Note by default we get a subscription account (context).
+#You can also get a tenant ONLY account (context) where there are tenants with no subscriptions
+az login --allow-no-subscriptions --tenant savilltech.onmicrosoft.com
+
+az login --use-device-code  #use a remote browser
+az login --identity  #use managed identity
+az login --service-principal -u <app ID> -p <password/cert> -t <tenant> #service principal
+#Create a service principal
+#https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli
+az ad sp create-for-rbac --name TestSP1  #will generate random secret and display in JSON format ready for use
+# gets contributor by default but --role gives more granular and will be required for role in future as contrib default removed
+
+#if need an access token to an audience
+#may need to use SET <variable>=... depending on platform. I'm running on PowerShell!
+$token = az account get-access-token --resource https://vault.azure.net
+#can just run rest method as well and token handled!
+az rest --method get --url https://management.azure.com/subscriptions/<sub ID>/resourcegroups/RG-AKS?api-version=2020-10-01
+
+
+#Accounts, i.e. contexts!
+az account show #current context, e.g. Get-AzContext
+az account list --output table #available, e.g. Get-AzContext -ListAvailable
+az account set --subscription "SavillTech Dev Subscription" #set context e.g. Select-AzContext
+#user abbreviation instead
+az account set -s "SavillTech Dev Subscription"
+
+
+#some commands
+az cloud list --output table
+
+az group -h
+az group list -h
+az group list --output table  #or json, jsonc, yaml, tsv
+az configure #can set defaults
+az vm create --help
+az vm create --name testvm --resource-group RG-SCUSA --image UbuntuLTS
+az vm list-sizes --location southcentralus -o table
+az vm list-skus --location southcentralus -o table
+
+#Commands return JSON which can then be searched using JMESPath queries
+az group list --query "[?location=='southcentralus']" --output table
+az group list --query "[?starts_with(name, 'RG-')]" --output table
+az group show -n RG-AKS
+az vm list-skus --location southcentralus --query "[?resourceType=='disks']" -o table
+#Change attribute names to make clearer
+az vm list --query '[].{Name:name, OS:storageProfile.osDisk.osType, admin:osProfile.adminUsername}' -o table
+
+
+#trying to find a command
+az extension add -n next
+az extension list --output table
+az find vm  #using AI to assist
+az find "create disk"
+az next   #extension to help predict what may want to do next
+az group create --name rgtest10 --location southcentralus
+az next
+az group list --query "[?name=='rgtest10']"
+az group delete --name rgtest10
+
+
+#Interactive
+az interactive
+#can change default scope
+%%vm
+%%image
+#back to default or %%.. to move up one level
+%%
+#previous query output
+??
+vm list
+# first item in array from previous
+vm show --name "?? [0] | name" --resource-group "?? [0] | resourceGroup"
