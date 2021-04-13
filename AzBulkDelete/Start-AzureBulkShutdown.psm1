@@ -1,5 +1,6 @@
 <#
-Shutdown resources
+Bulk Shutdown Azure Resources
+v1.2
 John Savill
 
 Need to auth for PowerShell Azure module
@@ -7,12 +8,41 @@ Need to auth for PowerShell Azure module
 Permissions required:
 */read permission on all objects to see
 Microsoft.Compute/virtualMachineScaleSets/deallocate/action VMSS
+Microsoft.Compute/virtualMachineScaleSets/virtualMachines/deallocate/action VMSS
 Microsoft.Compute/virtualMachines/deallocate/action VM
 Microsoft.ContainerService/managedClusters/write  AKS
+Microsoft.Resources/tags/write write to any tag resource
+
+Change Notes:
+
+Version 1.1
+
+-	Writes number completed every 20 records
+-	Writes/adds tag to deallocated resources. Adds requirement for Microsoft.Resources/tags/write permission
+-	Gets more detailed error code where possible and also writes information to JSON where possible including locked resources
+-	Only changes subscription context if required
+-	Suppress command expiring messages
+-	Skipped resources have their own unique status now
+
+Version 1.2
+
+-   Switched to -whatif instead of -pretend
+-   Check required columns in input files
+-   Use a JSON file to specify the tag name, text and how often to write out progress records
+-   Rename function to Start-AzureBulkShutdown to use a standard noun
+
+Example JSON configuration output generate
+$configurationSettings = @{"tagName"="automated-deallocation";
+                            "tagValue"="This has been auto-deallocated by a scheduled task";
+                            "tagWrite"=$true;
+                            "outputProgressInterval"=20}
+$configurationSettings | ConvertTo-Json | Out-File -FilePath '.\bulkAzureShutdown.json'
+
 #>
 
-function Bulk-AzureShutdown
+function Start-AzureBulkShutdown
 {
+    [CmdletBinding(SupportsShouldProcess)]
     Param (
         [Parameter(Mandatory=$true,
         ValueFromPipeline=$false)]
@@ -21,14 +51,23 @@ function Bulk-AzureShutdown
         [Parameter(Mandatory=$true,
         ValueFromPipeline=$false)]
         [String[]]
-        $ExcludeSubList,
-        [Parameter(Mandatory=$false,
-        ValueFromPipeline=$false)]
-        [Switch]
-        $Pretend
+        $ExcludeSubList
     )
 
     $statusGood = $true
+
+    #Silence warnings about changing cmdlets
+    Set-Item Env:\SuppressAzurePowerShellBreakingChangeWarnings "true" > $null
+
+    #read in configuration
+    try {
+        $configurationSettingsFile = Get-Content -Path '.\bulkAzureShutdown.json' -ErrorAction Stop
+        $configurationSettings = $configurationSettingsFile | convertfrom-json -AsHashTable
+    }
+    catch {
+        Write-Error "Error reading configuration file: `n $_ "
+        $statusGood = $false
+    }
 
     #read in resources
     try {
@@ -37,17 +76,46 @@ function Bulk-AzureShutdown
     catch {
         Write-Error "Error reading resource file: `n $_ "
         $statusGood = $false
+        $resourceList = $null
     }
 
     #List of protected subs
     try {
         $excludeSubArrayDetail = Import-Csv -Path $ExcludeSubList
-        $protectSubList = $excludeSubArrayDetail | select-object -Property 'Sub ID' -ExpandProperty 'Sub ID'
-        #[string[]]$protectSubList = Get-Content -Path $ExcludeSubList #OLD CODE IF TEXT FILE
+        #Make sure have the Sub ID column which is all we need
+        if(Get-Member -inputobject $excludeSubArrayDetail[0] -name "Sub ID" -membertype Properties)
+        {
+            $protectSubList = $excludeSubArrayDetail | select-object -Property 'Sub ID' -ExpandProperty 'Sub ID'
+            #[string[]]$protectSubList = Get-Content -Path $ExcludeSubList #OLD CODE IF TEXT FILE
+        }
+        else
+        {
+            write-error "Input subscription file format failed"
+            $statusGood = $false
+        }
+
     }
     catch {
         Write-Error "Error reading subscription exception file: `n $_ "
         $statusGood = $false
+    }
+
+    if($statusGood)
+    {
+        #Check have the required columns in resource file
+        if((Get-Member -inputobject $resourceList[0] -name "SubscriptionID" -membertype Properties) -and
+        (Get-Member -inputobject $resourceList[0] -name "Subscription" -membertype Properties) -and
+        (Get-Member -inputobject $resourceList[0] -name "Rsc Type" -membertype Properties) -and
+        (Get-Member -inputobject $resourceList[0] -name "Resource Name" -membertype Properties) -and
+        (Get-Member -inputobject $resourceList[0] -name "RscID" -membertype Properties))
+        {
+            write-output "Input resource file format check good"
+        }
+        else
+        {
+            write-error "Input resource file format failed"
+            $statusGood = $false
+        }
     }
 
     if($statusGood)
@@ -122,23 +190,48 @@ function Bulk-AzureShutdown
             Write-Output "`nContinuing. Pausing for 10 seconds if need to cancel"
             Start-Sleep -Seconds 10
 
-
             Write-Output "`nStarting actions at $(get-date)"
+
+            $actionedSoFar=0
+
+            $prevSubID='notarealsubatall'
+
+            if($configurationSettings.tagWrite)
+            {
+                if($configurationSettings.tagValue.length -gt 256)
+                {
+                    Write-Error "Passed tag value is greated than 256 characters and will be truncated to 256"
+                    $configurationSettings.tagValue=$configurationSettings.tagValue.SubString(0,256)
+                }
+                $tagToStamp = @{$configurationSettings.tagName=$configurationSettings.tagValue}
+            }
+
             #Here goes
             foreach($actionObject in $resourceObjectArray)
             {
+                $actionedSoFar++ #increment counter by 1
+                if($actionedSoFar % $configurationSettings.outputProgressInterval -eq 0)  #modulo operator to see what is left is 0, i.e. increments of whatever set, e.g. 20
+                {
+                    Write-Output "`n-- Processed $actionedSoFar out of $actionResourceCount ($([int](($actionedSoFar/$actionResourceCount)*100))%) --`n"
+                }
+
                 Write-Output " - Resource $($actionObject.ResourceName) $($actionObject.ResourceType) will be stopped"
 
-                if(!$Pretend)
+                if($PSCmdlet.ShouldProcess($actionObject.ResourceName))
                 {
-                    Set-AzContext -Subscription $actionObject.SubID  > $null #change to the subscription of the object quietly
+                    if($prevSubID -ne $actionObject.SubID)  #if this record has different subscription from previous we need to change
+                    {
+                        Write-Output "* Changing context to subscription $($actionObject.SubID)"
+                        Set-AzContext -Subscription $actionObject.SubID  > $null #change to the subscription of the object quietly
+                        $prevSubID = $actionObject.SubID #set last sub to this object sub
+                    }
 
                     try {
-                        $resourceObjInfo  = Get-AzResource -Id $actionObject.ResourceID #get the object based on the known ID
+                        $resourceObjInfo  = Get-AzResource -Id $actionObject.ResourceID -ErrorAction Stop #get the object based on the known ID
                     }
                     catch {
-                        Write-Error "Error finding object $($actionObject.ResourceID)"
-                        $actionObject.ActionStatus = "ErrorNotFound"
+                        $actionObject.Information = $_.Exception.Message
+                        $resourceObjInfo = $null #need to force to null since above failed
                     }
 
                     if($null -ne $resourceObjInfo) #if found an object
@@ -148,10 +241,10 @@ function Bulk-AzureShutdown
                             'VM'
                             {
                                 try {
-                                    $status = Stop-AzVM -Name $resourceObjInfo.Name -ResourceGroupName $resourceObjInfo.ResourceGroupName -Force -NoWait
+                                    $status = Stop-AzVM -Name $resourceObjInfo.Name -ResourceGroupName $resourceObjInfo.ResourceGroupName -Force -NoWait -ErrorAction Stop
                                     if($status.StatusCode -ne 'Accepted')   #would be Succeeded if not using NoWait against Status property
                                     {
-                                        Write-Error " * Error stopping $($resourceObjInfo.Name) - $($status.status)"
+                                        Write-Error " * Error response stopping $($resourceObjInfo.Name) - $($status.status)"
                                         $actionObject.ActionStatus = "ErrorStopping"
                                     }
                                     else {
@@ -159,26 +252,63 @@ function Bulk-AzureShutdown
                                     }
                                 }
                                 catch {
-                                    Write-Error "Error stopping $($resourceObjInfo.Name) $_"
-                                    $actionObject.ActionStatus = "ErrorDuringStopAction"
+                                    $errorMessage = $_.Exception.Message
+                                    Write-Error "Error stopping $($resourceObjInfo.Name)"
+                                    $errorCodePosition = $errorMessage.IndexOf("ErrorCode: ")
+                                    if($errorCodePosition -ne -1) #if found
+                                    {
+                                        $errorCode = $errorMessage.Substring(($errorCodePosition+11),($errorMessage.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
+                                        $actionObject.ActionStatus = $errorCode
+                                    }
+                                    else
+                                    {
+                                        $actionObject.ActionStatus = "ErrorDuringStopAction"
+                                    }
+                                    Write-Output $errorMessage
+                                    $actionObject.Information = $errorMessage
                                 }
                             }
                             'VMSS'
                             {
                                 try {
-                                    $status = Stop-AzVmss -VMScaleSetName $resourceObjInfo.Name -ResourceGroupName $resourceObjInfo.ResourceGroupName -Force -AsJob
+                                    $status = Stop-AzVmss -VMScaleSetName $resourceObjInfo.Name -ResourceGroupName $resourceObjInfo.ResourceGroupName -Force -AsJob -ErrorAction Stop
                                     if($status.State -eq 'Failed')  #if not asjob we would check -ne 'Succeeded' against .Status but as job we really look for Running and don't want failed
                                     {
-                                        Write-Error " * Error stopping $($resourceObjInfo.Name) - $($status.status)"
-                                        $actionObject.ActionStatus = "ErrorStopping"
+                                        Write-Error " * Error response stopping $($resourceObjInfo.Name)"
+                                        #Need to get more data here, i.e. if locked
+                                        $extendedStatus = (Receive-Job -Job $status -Keep 2>&1).Exception.message #get the rest of the data and have to redirect error out to std to actually capture!
+                                        $errorCodePosition = $extendedStatus.IndexOf("ErrorCode: ")
+                                        if($errorCodePosition -ne -1) #if found
+                                        {
+                                            $errorCode = $extendedStatus.Substring(($errorCodePosition+11),($extendedStatus.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
+                                            $actionObject.ActionStatus = $errorCode
+                                        }
+                                        else
+                                        {
+                                            $actionObject.ActionStatus = "ErrorStopping"
+                                        }
+                                        Write-Output $extendedStatus
+                                        $actionObject.Information = $extendedStatus
                                     }
                                     else {
                                         $actionObject.ActionStatus = "Success"
                                     }
                                 }
                                 catch {
-                                    Write-Error "Error stopping $($resourceObjInfo.Name) $_"
-                                    $actionObject.ActionStatus = "ErrorDuringStopAction"
+                                    $errorMessage = $_.Exception.Message
+                                    Write-Error "Error stopping $($resourceObjInfo.Name)"
+                                    $errorCodePosition = $errorMessage.IndexOf("ErrorCode: ")
+                                    if($errorCodePosition -ne -1) #if found
+                                    {
+                                        $errorCode = $errorMessage.Substring(($errorCodePosition+11),($errorMessage.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
+                                        $actionObject.ActionStatus = $errorCode
+                                    }
+                                    else
+                                    {
+                                        $actionObject.ActionStatus = "ErrorDuringStopAction"
+                                    }
+                                    Write-Output $errorMessage
+                                    $actionObject.Information = $errorMessage
                                 }
                             }
                             'AKS'
@@ -189,7 +319,7 @@ function Bulk-AzureShutdown
                                 if(($cluster.AgentPoolProfiles | Where-Object {$_.Mode -eq "System"}).count -eq 0) #if the system pool is 0 its already stopped
                                 {
                                     Write-Output " $($resourceObjInfo.Name) is already stopped"
-                                    $actionObject.ActionStatus = "Success"
+                                    $actionObject.ActionStatus = "Skipped"
                                     $actionObject.Information = "AlreadyStopped"
                                 }
                                 else
@@ -222,8 +352,8 @@ function Bulk-AzureShutdown
                                         }
                                         #>
                                         write-output "Skipping AKS currently"
-                                        $actionObject.ActionStatus = "Success"
-                                        $actionObject.Information = "Skipped"
+                                        $actionObject.ActionStatus = "Skipped"
+                                        $actionObject.Information = "AKSException"
                                         #az aks stop --name $clusterName --resource-group $clusterRG
                                     }
                                     else
@@ -262,13 +392,39 @@ function Bulk-AzureShutdown
                                 $actionObject.ActionStatus = "UnsupportedObject"
                             }
                         } #end of switch statement for type
+
+                        #Update the tag if this did not error
+                        if($actionObject.ActionStatus -eq "Success")
+                        {
+                            if($configurationSettings.tagWrite)
+                            {
+                                $tags = $resourceObjInfo.Tags #get current ones
+                                if($null -ne $tags)
+                                {
+                                    if(!$tags.ContainsKey($configurationSettings.tagName)) #not already got the tag
+                                    {
+                                        Write-Output "  - Adding Tag to resource"
+                                        Update-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp -Operation Merge  > $null
+                                    }
+                                }
+                                else #no tags
+                                {
+                                    Write-Output "  - Setting tag on resource"
+                                    New-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp  > $null #just set to the tag quietly
+                                }
+                            }
+                        }
                     }
                     else
                     {
                         Write-Error " * Resource $($actionObject.ResourceName) $($actionObject.ResourceType) was not found"
                         $actionObject.ActionStatus = "ObjectNotFound"
                     } #end of if resource not null
-                } #end of if pretend
+                } #end of what-if
+                else
+                {
+                    Write-Host "What if: Would have deallocated the resource" -ForegroundColor Cyan
+                }
             } #for each object
 
             Write-Output "`nCompleted actions at $(get-date)"
@@ -278,8 +434,8 @@ function Bulk-AzureShutdown
             $exemptCount = ($exemptObjectArray | measure-object).Count
 
             #write out to file the resources that did not succeed
-            $resourceObjectArray | Where-Object {$_.ActionStatus -ne 'Success'} | ConvertTo-Json | Out-File -FilePath '.\errorresource.json'
-            $failedCount = ($resourceObjectArray | Where-Object {$_.ActionStatus -ne 'Success'} | Measure-Object).Count
+            $resourceObjectArray | Where-Object {$_.ActionStatus -ne 'Success' -and $_.ActionStatus -ne 'Skipped'} | ConvertTo-Json | Out-File -FilePath '.\errorresource.json'
+            $failedCount = ($resourceObjectArray | Where-Object {$_.ActionStatus -ne 'Success' -and $_.ActionStatus -ne 'Skipped'} | Measure-Object).Count
 
             Write-Output "Completed. Files have been created in local folder for the exempt ($exemptCount) and failed ($failedCount) resources."
 

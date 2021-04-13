@@ -1,0 +1,6 @@
+{
+  "tagValue": "This has been auto-deallocated by a scheduled task",
+  "tagName": "automated-deallocation",
+  "outputProgressInterval": 20,
+  "tagWrite": true
+}
