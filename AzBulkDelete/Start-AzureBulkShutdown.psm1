@@ -1,6 +1,6 @@
 <#
 Bulk Shutdown Azure Resources
-v1.2
+v1.3
 John Savill
 
 Need to auth for PowerShell Azure module
@@ -30,6 +30,11 @@ Version 1.2
 -   Check required columns in input files
 -   Use a JSON file to specify the tag name, text and how often to write out progress records
 -   Rename function to Start-AzureBulkShutdown to use a standard noun
+
+Version 1.3
+
+-   Add check on VMSS that is NOT part of AKS cluster by checking for billing extension presense
+
 
 Example JSON configuration output generate
 $configurationSettings = @{"tagName"="automated-deallocation";
@@ -270,46 +275,71 @@ function Start-AzureBulkShutdown
                             }
                             'VMSS'
                             {
-                                try {
-                                    $status = Stop-AzVmss -VMScaleSetName $resourceObjInfo.Name -ResourceGroupName $resourceObjInfo.ResourceGroupName -Force -AsJob -ErrorAction Stop
-                                    if($status.State -eq 'Failed')  #if not asjob we would check -ne 'Succeeded' against .Status but as job we really look for Running and don't want failed
+                                $skipExecution=$false
+                                try
+                                {
+                                    #Check if this VMSS is actually owned by AKS in which case we need to skip
+                                    $vmssInfo = get-azvmss -VMScaleSetName $resourceObjInfo.Name -ResourceGroupName $resourceObjInf.ResourceGroupName -ErrorAction Stop
+                                    if(($vmssInfo.VirtualMachineProfile.ExtensionProfile.Extensions.Type -contains "Compute.AKS.Linux.Billing") -or
+                                        ($vmssInfo.VirtualMachineProfile.ExtensionProfile.Extensions.Type -contains "Compute.AKS.Windows.Billing"))
                                     {
-                                        Write-Error " * Error response stopping $($resourceObjInfo.Name)"
-                                        #Need to get more data here, i.e. if locked
-                                        $extendedStatus = (Receive-Job -Job $status -Keep 2>&1).Exception.message #get the rest of the data and have to redirect error out to std to actually capture!
-                                        $errorCodePosition = $extendedStatus.IndexOf("ErrorCode: ")
-                                        if($errorCodePosition -ne -1) #if found
-                                        {
-                                            $errorCode = $extendedStatus.Substring(($errorCodePosition+11),($extendedStatus.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
-                                            $actionObject.ActionStatus = $errorCode
-                                        }
-                                        else
-                                        {
-                                            $actionObject.ActionStatus = "ErrorStopping"
-                                        }
-                                        Write-Output $extendedStatus
-                                        $actionObject.Information = $extendedStatus
-                                    }
-                                    else {
-                                        $actionObject.ActionStatus = "Success"
+                                        Write-Output "!! This VMSS is part of an AKS cluster and will be skipped. Shutdown should be via the AKS resource"
+                                        $skipExecution=$true
+                                        $actionObject.ActionStatus = "VMSSActiononAKSSkip"
+                                        $actionObject.Information = "Stop was attempted on VMSS that is part of AKS cluster"
                                     }
                                 }
                                 catch {
                                     $errorMessage = $_.Exception.Message
-                                    Write-Error "Error stopping $($resourceObjInfo.Name)"
-                                    $errorCodePosition = $errorMessage.IndexOf("ErrorCode: ")
-                                    if($errorCodePosition -ne -1) #if found
-                                    {
-                                        $errorCode = $errorMessage.Substring(($errorCodePosition+11),($errorMessage.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
-                                        $actionObject.ActionStatus = $errorCode
-                                    }
-                                    else
-                                    {
-                                        $actionObject.ActionStatus = "ErrorDuringStopAction"
-                                    }
+                                    Write-Error "Error getting VMSS information on $($resourceObjInfo.Name)"
                                     Write-Output $errorMessage
+                                    $actionObject.ActionStatus = "ErrorGettingVMSSInfo"
                                     $actionObject.Information = $errorMessage
+                                    $skipExecution=$true
                                 }
+                                if(!$skipExecution)
+                                {
+                                    try {
+                                        $status = Stop-AzVmss -VMScaleSetName $resourceObjInfo.Name -ResourceGroupName $resourceObjInfo.ResourceGroupName -Force -AsJob -ErrorAction Stop
+                                        if($status.State -eq 'Failed')  #if not asjob we would check -ne 'Succeeded' against .Status but as job we really look for Running and don't want failed
+                                        {
+                                            Write-Error " * Error response stopping $($resourceObjInfo.Name)"
+                                            #Need to get more data here, i.e. if locked
+                                            $extendedStatus = (Receive-Job -Job $status -Keep 2>&1).Exception.message #get the rest of the data and have to redirect error out to std to actually capture!
+                                            $errorCodePosition = $extendedStatus.IndexOf("ErrorCode: ")
+                                            if($errorCodePosition -ne -1) #if found
+                                            {
+                                                $errorCode = $extendedStatus.Substring(($errorCodePosition+11),($extendedStatus.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
+                                                $actionObject.ActionStatus = $errorCode
+                                            }
+                                            else
+                                            {
+                                                $actionObject.ActionStatus = "ErrorStopping"
+                                            }
+                                            Write-Output $extendedStatus
+                                            $actionObject.Information = $extendedStatus
+                                        }
+                                        else {
+                                            $actionObject.ActionStatus = "Success"
+                                        }
+                                    }
+                                    catch {
+                                        $errorMessage = $_.Exception.Message
+                                        Write-Error "Error stopping $($resourceObjInfo.Name)"
+                                        $errorCodePosition = $errorMessage.IndexOf("ErrorCode: ")
+                                        if($errorCodePosition -ne -1) #if found
+                                        {
+                                            $errorCode = $errorMessage.Substring(($errorCodePosition+11),($errorMessage.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
+                                            $actionObject.ActionStatus = $errorCode
+                                        }
+                                        else
+                                        {
+                                            $actionObject.ActionStatus = "ErrorDuringStopAction"
+                                        }
+                                        Write-Output $errorMessage
+                                        $actionObject.Information = $errorMessage
+                                    }
+                                } #end of if not skip
                             }
                             'AKS'
                             {
