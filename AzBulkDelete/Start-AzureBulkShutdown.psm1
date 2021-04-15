@@ -1,6 +1,6 @@
 <#
 Bulk Shutdown Azure Resources
-v1.3
+v1.4
 John Savill
 
 Need to auth for PowerShell Azure module
@@ -33,8 +33,12 @@ Version 1.2
 
 Version 1.3
 
--   Add check on VMSS that is NOT part of AKS cluster by checking for billing extension presense
+-   Add check on VMSS that is NOT part of AKS cluster by checking for billing extension presence
 
+Version 1.4
+
+-   Moved the error code find to a separate private function
+-   Main function passes as strings not array of strings
 
 Example JSON configuration output generate
 $configurationSettings = @{"tagName"="automated-deallocation";
@@ -51,11 +55,11 @@ function Start-AzureBulkShutdown
     Param (
         [Parameter(Mandatory=$true,
         ValueFromPipeline=$false)]
-        [String[]]
+        [String]
         $InputCSV,
         [Parameter(Mandatory=$true,
         ValueFromPipeline=$false)]
-        [String[]]
+        [String]
         $ExcludeSubList
     )
 
@@ -259,10 +263,9 @@ function Start-AzureBulkShutdown
                                 catch {
                                     $errorMessage = $_.Exception.Message
                                     Write-Error "Error stopping $($resourceObjInfo.Name)"
-                                    $errorCodePosition = $errorMessage.IndexOf("ErrorCode: ")
-                                    if($errorCodePosition -ne -1) #if found
+                                    $errorCode = Get-ErrorCodeFromString($errorMessage)
+                                    if($null -ne $errorCode)
                                     {
-                                        $errorCode = $errorMessage.Substring(($errorCodePosition+11),($errorMessage.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
                                         $actionObject.ActionStatus = $errorCode
                                     }
                                     else
@@ -280,6 +283,7 @@ function Start-AzureBulkShutdown
                                 {
                                     #Check if this VMSS is actually owned by AKS in which case we need to skip
                                     $vmssInfo = get-azvmss -VMScaleSetName $resourceObjInfo.Name -ResourceGroupName $resourceObjInf.ResourceGroupName -ErrorAction Stop
+
                                     if(($vmssInfo.VirtualMachineProfile.ExtensionProfile.Extensions.Type -contains "Compute.AKS.Linux.Billing") -or
                                         ($vmssInfo.VirtualMachineProfile.ExtensionProfile.Extensions.Type -contains "Compute.AKS.Windows.Billing"))
                                     {
@@ -293,7 +297,15 @@ function Start-AzureBulkShutdown
                                     $errorMessage = $_.Exception.Message
                                     Write-Error "Error getting VMSS information on $($resourceObjInfo.Name)"
                                     Write-Output $errorMessage
-                                    $actionObject.ActionStatus = "ErrorGettingVMSSInfo"
+                                    $errorCode = Get-ErrorCodeFromString($errorMessage)
+                                    if($null -ne $errorCode)
+                                    {
+                                        $actionObject.ActionStatus = $errorCode
+                                    }
+                                    else
+                                    {
+                                        $actionObject.ActionStatus = "ErrorGettingVMSSInfo"
+                                    }
                                     $actionObject.Information = $errorMessage
                                     $skipExecution=$true
                                 }
@@ -306,10 +318,9 @@ function Start-AzureBulkShutdown
                                             Write-Error " * Error response stopping $($resourceObjInfo.Name)"
                                             #Need to get more data here, i.e. if locked
                                             $extendedStatus = (Receive-Job -Job $status -Keep 2>&1).Exception.message #get the rest of the data and have to redirect error out to std to actually capture!
-                                            $errorCodePosition = $extendedStatus.IndexOf("ErrorCode: ")
-                                            if($errorCodePosition -ne -1) #if found
+                                            $errorCode = Get-ErrorCodeFromString($extendedStatus)
+                                            if($null -ne $errorCode)
                                             {
-                                                $errorCode = $extendedStatus.Substring(($errorCodePosition+11),($extendedStatus.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
                                                 $actionObject.ActionStatus = $errorCode
                                             }
                                             else
@@ -326,10 +337,9 @@ function Start-AzureBulkShutdown
                                     catch {
                                         $errorMessage = $_.Exception.Message
                                         Write-Error "Error stopping $($resourceObjInfo.Name)"
-                                        $errorCodePosition = $errorMessage.IndexOf("ErrorCode: ")
-                                        if($errorCodePosition -ne -1) #if found
+                                        $errorCode = Get-ErrorCodeFromString($errorMessage)
+                                        if($null -ne $errorCode)
                                         {
-                                            $errorCode = $errorMessage.Substring(($errorCodePosition+11),($errorMessage.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
                                             $actionObject.ActionStatus = $errorCode
                                         }
                                         else
@@ -476,3 +486,26 @@ function Start-AzureBulkShutdown
         }
     } #if status good
 }
+
+function Get-ErrorCodeFromString
+{
+    Param (
+        [Parameter(Mandatory=$true)]
+        [String]
+        $inputErrorMessage
+    )
+
+    $errorCodePosition = $inputErrorMessage.IndexOf("ErrorCode: ")
+    if($errorCodePosition -ne -1) #if found
+    {
+        $errorCode = $inputErrorMessage.Substring(($errorCodePosition+11),($inputErrorMessage.Substring(($errorCodePosition+11)).IndexOf("`r")))  #return not newline
+        return $errorCode
+    }
+    else
+    {
+        return $null
+    }
+}
+
+#Only one public function
+Export-ModuleMember -Function Start-AzureBulkShutdown
