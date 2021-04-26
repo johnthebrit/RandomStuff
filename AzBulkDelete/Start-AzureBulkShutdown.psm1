@@ -40,6 +40,10 @@ Version 1.4
 -   Moved the error code find to a separate private function
 -   Main function passes as strings not array of strings
 
+Version 1.5
+
+-   Enabled the stop of AKS clusters built on VMSS
+
 Example JSON configuration output generate
 $configurationSettings = @{"tagName"="automated-deallocation";
                             "tagValue"="This has been auto-deallocated by a scheduled task";
@@ -370,7 +374,7 @@ function Start-AzureBulkShutdown
                                         #Write-Output "Resource AKS Cluster $clusterName is VMSS-based and is being stopped"
                                         #https://docs.microsoft.com/en-us/rest/api/aks/managedclusters/stop
 
-                                        <#
+
                                         #Create token
                                         $accessToken = (Get-AzAccessToken).Token #ARM audience
                                         $authHeader = @{
@@ -390,10 +394,10 @@ function Start-AzureBulkShutdown
                                             write-output "Stop submit failed, $($resp.StatusCode) - $($resp.StatusDescription)"
                                             $actionObject.ActionStatus = "ErrorDuringStopAction"
                                         }
-                                        #>
-                                        write-output "Skipping AKS currently"
+
+                                        <#write-output "Skipping AKS currently"
                                         $actionObject.ActionStatus = "Skipped"
-                                        $actionObject.Information = "AKSException"
+                                        $actionObject.Information = "AKSException"#>
                                         #az aks stop --name $clusterName --resource-group $clusterRG
                                     }
                                     else
@@ -413,16 +417,6 @@ function Start-AzureBulkShutdown
                                                 #Scale to 0
 
                                             }
-                                            $URLPutContent = "https://management.azure.com/subscriptions/$subID/resourceGroups/$clusterRG/providers/Microsoft.ContainerService/managedClusters/$clusterName?api-version=2020-11-01"
-                                            $resp = Invoke-WebRequest -Uri $URLPostContent -Method Put -Headers $authHeader
-                                            if($resp.StatusCode -eq 202)
-                                            {
-                                                write-output "Stop submitted succesfully"
-                                            }
-                                            else
-                                            {
-                                                write-output "Stop submit failed, $($resp.StatusCode) - $($resp.StatusDescription)"
-                                            }
                                         } #>
                                     } #end of if VMSS based AKS
                                 } #end of if not already stopped
@@ -434,6 +428,7 @@ function Start-AzureBulkShutdown
                         } #end of switch statement for type
 
                         #Update the tag if this did not error
+                        #This will error for AKS that has been stopped as you cannot update tag on stopped AKS
                         if($actionObject.ActionStatus -eq "Success")
                         {
                             if($configurationSettings.tagWrite)
