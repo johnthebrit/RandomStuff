@@ -1,6 +1,6 @@
 <#
 Bulk Shutdown Azure Resources
-v1.4
+v1.6
 John Savill
 
 Need to auth for PowerShell Azure module
@@ -43,6 +43,10 @@ Version 1.4
 Version 1.5
 
 -   Enabled the stop of AKS clusters built on VMSS
+
+Version 1.6
+
+-   Catch error if cannot write tag
 
 Example JSON configuration output generate
 $configurationSettings = @{"tagName"="automated-deallocation";
@@ -428,24 +432,35 @@ function Start-AzureBulkShutdown
                         } #end of switch statement for type
 
                         #Update the tag if this did not error
-                        #This will error for AKS that has been stopped as you cannot update tag on stopped AKS
+                        #This will error for AKS that is stopping sometimes
                         if($actionObject.ActionStatus -eq "Success")
                         {
                             if($configurationSettings.tagWrite)
                             {
                                 $tags = $resourceObjInfo.Tags #get current ones
-                                if($null -ne $tags)
+                                try
                                 {
-                                    if(!$tags.ContainsKey($configurationSettings.tagName)) #not already got the tag
+                                    if($null -ne $tags)
                                     {
-                                        Write-Output "  - Adding Tag to resource"
-                                        Update-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp -Operation Merge  > $null
+                                        if(!$tags.ContainsKey($configurationSettings.tagName)) #not already got the tag
+                                        {
+                                            Write-Output "  - Adding Tag to resource"
+                                            Update-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp -Operation Merge  > $null
+                                        }
+                                    }
+                                    else #no tags
+                                    {
+                                        Write-Output "  - Setting tag on resource"
+                                        New-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp  > $null #just set to the tag quietly
                                     }
                                 }
-                                else #no tags
+                                catch
                                 {
-                                    Write-Output "  - Setting tag on resource"
-                                    New-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp  > $null #just set to the tag quietly
+                                    $errorMessage = $_.Exception.Message
+                                    Write-Error "Error writing tag to resource"
+                                    Write-Output $errorMessage
+                                    $actionObject.ActionStatus = "ActionedButNoTag"
+                                    $actionObject.Information = $errorMessage
                                 }
                             }
                         }
