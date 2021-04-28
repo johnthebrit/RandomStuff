@@ -445,13 +445,13 @@ function Start-AzureBulkShutdown
                                         if(!$tags.ContainsKey($configurationSettings.tagName)) #not already got the tag
                                         {
                                             Write-Output "  - Adding Tag to resource"
-                                            Update-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp -Operation Merge  > $null
+                                            Update-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp -Operation Merge -ErrorAction Stop  > $null
                                         }
                                     }
                                     else #no tags
                                     {
                                         Write-Output "  - Setting tag on resource"
-                                        New-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp  > $null #just set to the tag quietly
+                                        New-AzTag -ResourceId $actionObject.ResourceID -Tag $tagToStamp -ErrorAction Stop  > $null #just set to the tag quietly
                                     }
                                 }
                                 catch
