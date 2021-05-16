@@ -16,10 +16,11 @@ function Get-RandomMessage
     [CmdletBinding()]
     Param([parameter(ValueFromRemainingArguments=$true)][String[]] $args)
 
+    Write-Verbose "Generating a random number"
     $number=Get-Random -Maximum 10
-
     Write-Verbose "Number is $number"
 
+    Write-Debug "Start of switch statement"
     switch ($number)
     {
         {$_ -lt 4} { write-output "Howdy Y'all"; Write-Debug "Less than 4" }
