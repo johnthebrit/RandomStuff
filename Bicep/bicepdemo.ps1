@@ -1,0 +1,1 @@
+See bicepdemo.ps1 in the Azure Master Class repo Part11IacandDevOps\Bicep
