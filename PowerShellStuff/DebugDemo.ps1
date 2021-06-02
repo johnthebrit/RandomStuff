@@ -1,6 +1,6 @@
 function Write-OutRPSOption {
 
-    $RPSChoice = Get-Random -Minimum 1 -Maximum 9
+    $RPSChoice = Get-Random -Minimum 1 -Maximum 10 #will be less than the max, i.e. 1-9  -   1..1000 | % {Get-Random -Minimum 1 -Maximum 9} | group | select name,count
     Write-Verbose "Random number was $RPSChoice"
     switch ($RPSChoice) {
         {$PSItem -ge 1 -and $PSItem -le 3} { write-output "**   ROCK   **" }
