@@ -17,17 +17,18 @@ module storageAccount 'storageaccount.bicep' = {
   name: 'storageModule'
   scope: bwbRG
   params: {
-    location: bwbRG.location
     name: 'savtechscussabebsa'
   }
 }
 
 //apply an RBAC permission on the RG
+var contributor = 'b24988ac-6180-42a0-ab88-20f7382dd24c'
+
 module RBACApply 'assignRBAC.bicep' = {
   name: 'RBACModule'
   scope: bwbRG
   params: {
-    roleDefinitionId: '${subscription().id}/providers/Microsoft.Authorization/roleDefinitions/b24988ac-6180-42a0-ab88-20f7382dd24c' //Contributor
+    roleDefinitionGUID: contributor
     principalId: '63600c24-ba49-4881-9ed2-6699d28df84b' //JL
   }
 }
@@ -37,7 +38,7 @@ module policyApply 'assignPolicy.bicep' = {
   name: 'PolicyModule'
   scope: bwbRG
   params: {
-    policyID: '/providers/Microsoft.Authorization/policyDefinitions/e56962a6-4747-49cd-b67b-bf8b01975c4c'
+    policyID: tenantResourceId('microsoft.authorization/policydefinitions', 'e56962a6-4747-49cd-b67b-bf8b01975c4c')
     policyName: 'Allowed locations'
   }
 }
@@ -49,3 +50,5 @@ module resourceLock 'resourcelockRG.bicep' = {
 }
 
 output subID string = subscription().id
+
+//bicep build ./bluewithoutblue.bicep
