@@ -6,7 +6,7 @@ $authHeader = @{
     'Authorization'='Bearer ' + $token.Token
 }
 
-$UriString = "https://management.azure.com/subscriptions/$subID/providers/Microsoft.Compute/skus?api-version=2019-04-01&`$filter=location eq 'eastus2'"
+$UriString = "https://management.azure.com/subscriptions/$subID/providers/Microsoft.Compute/skus?api-version=2019-04-01&`$filter=location eq 'eastus2'" #have to escape the $ for the filter
 $r = Invoke-WebRequest -Uri $UriString -Method Get -Headers $authHeader
 
 $rarray = $r.Content | ConvertFrom-Json # | ConvertTo-Json #Make it pretty
