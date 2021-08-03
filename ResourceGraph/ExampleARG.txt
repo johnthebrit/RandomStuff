@@ -67,3 +67,17 @@ Resources
     | join kind=inner (ResourceContainers | where type=='microsoft.resources/subscriptions' | project SubName=name, subscriptionId) on subscriptionId
     | join kind=leftouter (Resources | where type=='microsoft.insights/autoscalesettings' | project ScaleName=tostring(properties.name), minCount=properties.profiles[0].capacity.minimum, maxCount=properties.profiles[0].capacity.maximum,lowerId=tolower(tostring(properties.targetResourceUri))) on lowerId
     | project VMMSName = name, RGName = resourceGroup, VMMSSKU = sku.name, VMMSCount = sku.capacity, SubName, SubID = subscriptionId, ResID = id, ScaleName, minCount, maxCount
+
+
+#Find all Azure Firewall instances in a sub that has AKS as well
+Resources
+| where type =~ 'microsoft.network/azurefirewalls'
+| project fwname = name, subscriptionId
+| join kind=inner (
+    Resources
+    | where type =~ 'microsoft.containerservice/managedclusters'
+    | project aksname = name, subscriptionId)
+on subscriptionId
+| distinct subscriptionId, fwname
+| join kind=leftouter (ResourceContainers | where type=='microsoft.resources/subscriptions' | project SubName=name, subscriptionId) on subscriptionId
+| project-away subscriptionId1
