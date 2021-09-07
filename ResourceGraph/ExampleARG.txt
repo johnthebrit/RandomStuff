@@ -81,3 +81,16 @@ on subscriptionId
 | distinct subscriptionId, fwname
 | join kind=leftouter (ResourceContainers | where type=='microsoft.resources/subscriptions' | project SubName=name, subscriptionId) on subscriptionId
 | project-away subscriptionId1
+
+
+#Find all CosmosDB accounts without Private Endpoints
+resources
+| where type == "microsoft.documentdb/databaseaccounts"
+| where isnull(properties['privateEndpointConnections'])
+| project dbname = name, rgname = resourceGroup, subscriptionId
+| join kind=leftouter (
+    resourcecontainers
+    | where type=='microsoft.resources/subscriptions'
+    | project SubName=name, subscriptionId)
+on subscriptionId
+| project-away subscriptionId1
