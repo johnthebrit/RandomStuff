@@ -94,3 +94,24 @@ resources
     | project SubName=name, subscriptionId)
 on subscriptionId
 | project-away subscriptionId1
+
+
+#Find all Linux VMs with OMS Agent not set to auto update
+Resources
+	| where type =~ 'Microsoft.Compute/virtualMachines'
+	| where properties.storageProfile.osDisk.osType =~ 'Linux'
+    | extend
+        JoinID = toupper(id),
+        OSName = tostring(properties.osProfile.computerName),
+        OSType = tostring(properties.storageProfile.osDisk.osType),
+        VMSize = tostring(properties.hardwareProfile.vmSize)
+    | join kind=inner(
+        Resources
+        | where type == 'microsoft.compute/virtualmachines/extensions'
+        | where name =~ 'OmsAgentForLinux' and properties.autoUpgradeMinorVersion =~ 'false'
+        | extend
+            VMId = toupper(substring(id, 0, indexof(id, '/extensions'))),
+            ExtensionName = name
+    ) on $left.JoinID == $right.VMId
+	| join kind=inner (ResourceContainers | where type=='microsoft.resources/subscriptions' | project SubName=name, subscriptionId) on subscriptionId
+	| project VMName = name, CompName = properties.osProfile.computerName, OSType =  properties.storageProfile.osDisk.osType, RGName = resourceGroup, SubName, SubID = subscriptionId
