@@ -2,6 +2,8 @@
 
 sudo apt update
 sudo apt install net-tools
+sudo apt list --upgradable
+sudo apt upgrade
 
 sudo chmod 777 /etc/sysctl.conf
 echo"net.ipv4.ip_forward = 1">/etc/sysctl.conf
