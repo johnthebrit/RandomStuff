@@ -18,39 +18,39 @@ sudo iptables -A FORWARD -j ACCEPT
 sudo ufw disable
 
 #These should match those configure on the GW LB Backend pool
-client_internal_vni=800
-client_internal_port=10800
-client_external_vni=801
-client_external_port=10801
+tunnel_internal_vni=800
+tunnel_internal_port=10800
+tunnel_external_vni=801
+tunnel_external_port=10801
 nva_lb_ip=10.200.0.5
 
 #MTU of 4000
 sudo ifconfig eth0 mtu 4000
 
 # Internal tunnel
-sudo ip link add vxlan${client_internal_vni} type vxlan id ${client_internal_vni} remote ${nva_lb_ip} dstport ${client_internal_port} nolearning
-sudo ip link set vxlan${client_internal_vni} up
+sudo ip link add vxlan${tunnel_internal_vni} type vxlan id ${tunnel_internal_vni} remote ${nva_lb_ip} dstport ${tunnel_internal_port} nolearning
+sudo ip link set vxlan${tunnel_internal_vni} up
 # External tunnel
-sudo ip link add vxlan${client_external_vni} type vxlan id ${client_external_vni} remote ${nva_lb_ip} dstport ${client_external_port} nolearning
-sudo ip link set vxlan${client_external_vni} up
+sudo ip link add vxlan${tunnel_external_vni} type vxlan id ${tunnel_external_vni} remote ${nva_lb_ip} dstport ${tunnel_external_port} nolearning
+sudo ip link set vxlan${tunnel_external_vni} up
 # Optional: bridge both VXLAN interfaces together (works around routing between them)
-sudo ip link add br-client type bridge
-sudo ip link set vxlan${client_internal_vni} master br-client
-sudo ip link set vxlan${client_external_vni} master br-client
-sudo ip link set br-client up
+sudo ip link add br-tunnel type bridge
+sudo ip link set vxlan${tunnel_internal_vni} master br-tunnel
+sudo ip link set vxlan${tunnel_external_vni} master br-tunnel
+sudo ip link set br-tunnel up
 
 # Optional: delete all VXLAN interfaces
-sudo ip link delete vxlan${client_internal_vni}
-sudo ip link delete vxlan${client_external_vni}
-sudo ip link delete br-client
+sudo ip link delete vxlan${tunnel_internal_vni}
+sudo ip link delete vxlan${tunnel_external_vni}
+sudo ip link delete br-tunnel
 
 
 #Viewing information
 ip a
 sysctl net.ipv4.ip_forward
-ifconfig vxlan${client_internal_vni}
-ip -d link show vxlan${client_internal_vni}
-ip -d link show vxlan${client_external_vni}
+ifconfig vxlan${tunnel_internal_vni}
+ip -d link show vxlan${tunnel_internal_vni}
+ip -d link show vxlan${tunnel_external_vni}
 route -n
 
 
