@@ -77,6 +77,7 @@ sudo systemctl daemon-reload
 
 
 #Viewing information
+#Make sure variables have been set
 ip a
 sysctl net.ipv4.ip_forward
 ifconfig vxlan${tunnel_internal_vni}
