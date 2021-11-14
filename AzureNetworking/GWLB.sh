@@ -1,5 +1,4 @@
 #Commands for the setup within the Linux VM to act as an NVA
-
 sudo apt update
 sudo apt install net-tools
 sudo apt list --upgradable
@@ -16,6 +15,25 @@ sudo iptables -A FORWARD -j ACCEPT
 
 #disable firewall
 sudo ufw disable
+
+
+#To make this autoload
+#Create a service file
+sudo vim /etc/systemd/system/nvanetwork.service
+
+[Unit]
+Description=vni service
+
+[Service]
+Type=simple
+ExecStart=/bin/bash /usr/local/bin/nvavnisetup.sh
+
+[Install]
+WantedBy=multi-user.target
+:wq
+
+#Create the file that actually sets up the VNIs
+sudo vim /usr/local/bin/nvavnisetup.sh
 
 #These should match those configure on the GW LB Backend pool
 tunnel_internal_vni=800
@@ -39,10 +57,20 @@ sudo ip link set vxlan${tunnel_internal_vni} master br-tunnel
 sudo ip link set vxlan${tunnel_external_vni} master br-tunnel
 sudo ip link set br-tunnel up
 
-# Optional: delete all VXLAN interfaces
-sudo ip link delete vxlan${tunnel_internal_vni}
-sudo ip link delete vxlan${tunnel_external_vni}
-sudo ip link delete br-tunnel
+:wq
+
+#Make usable as a service
+sudo chmod 744 /usr/local/bin/nvavnisetup.sh
+
+sudo chmod 664 /etc/systemd/system/nvanetwork.service
+sudo systemctl daemon-reload
+sudo systemctl enable nvanetwork.service
+
+
+#To test
+sudo systemctl --type service
+sudo systemctl start nvanetwork.service
+sudo systemctl daemon-reload
 
 
 #Viewing information
@@ -53,35 +81,7 @@ ip -d link show vxlan${tunnel_internal_vni}
 ip -d link show vxlan${tunnel_external_vni}
 route -n
 
-
-#To make this autoload
-#Create a service file
-sudo vim /etc/systemd/system/nvanetwork.service
-
-[Unit]
-Description=vni service
-
-[Service]
-Type=simple
-ExecStart=/bin/bash /usr/local/bin/nvavnisetup.sh
-
-[Install]
-WantedBy=multi-user.target
-:wq
-
-#Create the file that actually sets up the VNIs
-sudo vim /usr/local/bin/nvavnisetup.sh
-<lines 20-40>
-:wq
-
-#Make usable as a service
-sudo chmod 744 /usr/local/bin/nvavnisetup.sh
-
-sudo chmod 664 /etc/systemd/system/nvanetwork.service
-sudo systemctl daemon-reload
-sudo systemctl enable nvanetwork.service
-
-#To test
-sudo systemctl --type service
-sudo systemctl start nvanetwork.service
-sudo systemctl daemon-reload
+# Optional: delete all VXLAN interfaces
+sudo ip link delete vxlan${tunnel_internal_vni}
+sudo ip link delete vxlan${tunnel_external_vni}
+sudo ip link delete br-tunnel
