@@ -20,6 +20,7 @@ sudo ufw disable
 #To make this autoload
 #Create a service file
 sudo vim /etc/systemd/system/nvanetwork.service
+CONTENT:
 
 [Unit]
 Description=vni service
@@ -30,10 +31,12 @@ ExecStart=/bin/bash /usr/local/bin/nvavnisetup.sh
 
 [Install]
 WantedBy=multi-user.target
+
 :wq
 
 #Create the file that actually sets up the VNIs
 sudo vim /usr/local/bin/nvavnisetup.sh
+CONTENT:
 
 #These should match those configure on the GW LB Backend pool
 tunnel_internal_vni=800
