@@ -3,8 +3,8 @@ $path = Split-Path $template
 $templatefile = Split-Path $template -Leaf
 $filenameprefix = $templatefile.Substring(0,$templatefile.IndexOf('-M0')+2)
 
-$moduleNumber = 3
-$noOfLessons = 10
+$moduleNumber = 6
+$noOfLessons = 6
 
 foreach ($i in 1..$noOfLessons)
 {
