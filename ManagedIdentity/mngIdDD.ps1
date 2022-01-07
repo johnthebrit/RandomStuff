@@ -23,9 +23,9 @@ Get-MgEnvironment
 #View service principals for our managed identities which is name of resource for SA or UA-MI name
 $SPs = Get-MgServicePrincipal -Filter "DisplayName eq 'mi-savilltech1' or DisplayName eq 'DemoVM'"
 $SPs | format-table DisplayName,ServicePrincipalType,ID, AppID -autosize
-#Note there is NO application for this service principal
+#Note there is NO application for this service principal, its just randomly generated
 Get-MgApplication -ApplicationId $SPs[0].AppID
-#Can look at the detail but remember, we actually don't care about this SP really
+#Can look at the detail but remember, we actually don't care about this SP really, its fully managed!
 $SPs[0] | format-list
 
 #another way to view them but less efficient
@@ -34,7 +34,7 @@ $SPs[0] | format-list
 #endregion
 
 #Managed Identity Demo
-#region Managed Identity Demo
+#region Managed Identity Demo on DemoVM
 
 #Using Az module
 Connect-AzAccount -Identity #Connect as the managed identity
