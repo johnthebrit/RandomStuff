@@ -59,8 +59,8 @@ $SPs[0] | format-list
 ```
 Note another way to view them but less efficient
 ```powershell
-#$SPs = Get-MgServicePrincipal -All
-#$SPs | where {$_.DisplayName -eq "mi-savilltech1" -or $_.DisplayName -eq "DemoVM"}
+$SPs = Get-MgServicePrincipal -All
+$SPs | where {$_.DisplayName -eq "mi-savilltech1" -or $_.DisplayName -eq "DemoVM"}
 ```
 
 ## Managed Identity Demonstration
