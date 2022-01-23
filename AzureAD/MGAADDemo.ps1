@@ -61,6 +61,22 @@ Get-MgUser -Filter "userType eq 'guest'"
 Connect-MgGraph -Scopes "AuditLog.Read.All" #required for next command
 Get-MgUser -Filter "signInActivity/lastSignInDateTime le 2021-05-01T00:00:00Z"
 
+#Look at custom attributes
+Connect-MgGraph -Scopes "User.Read.All","CustomSecAttributeAssignment.ReadWrite.All"
+Get-MgDirectoryAttributeSet
+$user = Get-MgUser -UserId clark@savilltech.net
+$user | Format-List
+$user.CustomSecurityAttributes
+
+$accessToken = (Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com").Token #MS Graph audience
+$authHeader = @{
+    'Content-Type'='application/json'
+    'Authorization'='Bearer ' + $accessToken
+}
+$resp = Invoke-RestMethod -Uri "https://graph.microsoft.com/beta/users/$($user.Id)" -Method GET -Headers $authHeader
+$resp
+
+
 #Could then chain together
 Get-MgUser -Filter "signInActivity/lastSignInDateTime le 2021-05-01T00:00:00Z" |
      ForEach-Object {Get-MgUserMemberOf -UserId $_.Id }
