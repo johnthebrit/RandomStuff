@@ -115,3 +115,19 @@ Resources
     ) on $left.JoinID == $right.VMId
 	| join kind=inner (ResourceContainers | where type=='microsoft.resources/subscriptions' | project SubName=name, subscriptionId) on subscriptionId
 	| project VMName = name, CompName = properties.osProfile.computerName, OSType =  properties.storageProfile.osDisk.osType, RGName = resourceGroup, SubName, SubID = subscriptionId
+
+#SQL DB and its Server FQDN (have to match based on part of the resource ID of the DB)
+#Note the split has [" "] around so have to remove first 2 and last 2 characters
+resources
+| where type == "microsoft.sql/servers/databases"
+| where sku.name != "System"
+| extend dbserver = substring(tostring(split(id, '/databases', 0)),2,(strlen(split(id, '/databases', 0))-4))
+| project dbserver, name
+| join kind=leftouter (
+    resources
+    | where type == "microsoft.sql/servers"
+    | where sku.name != "System"
+    | extend FQDN = tostring(properties.fullyQualifiedDomainName)
+    | project dbserver = id, FQDN)
+    on dbserver
+| project-away dbserver1
