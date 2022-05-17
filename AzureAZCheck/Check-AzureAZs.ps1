@@ -35,5 +35,10 @@ function Check-AzureAzs {
 "@
 
     #Submit the REST call
-    $r = Invoke-RestMethod -Uri "https://management.azure.com/subscriptions/$subID/providers/Microsoft.Resources/checkZonePeers/?api-version=2022-01-01" -Method POST -Body $Body -Headers $authHeader
+    $r = Invoke-RestMethod -Uri "https://management.azure.com/subscriptions/$subID/providers/Microsoft.Resources/checkZonePeers/?api-version=2020-01-01" -Method POST -Body $Body -Headers $authHeader
 }
+
+Check-AzureAzs @("466c1a5d-e93b-4138-91a5-670daf44b0f8","5a7b82eb-ba40-42b9-80d9-8d33e15d6193") 'eastus'
+
+$subList = @("466c1a5d-e93b-4138-91a5-670daf44b0f8","5a7b82eb-ba40-42b9-80d9-8d33e15d6193")
+$locationname = 'southcentralus'
