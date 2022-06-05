@@ -34,13 +34,13 @@ $string -cmatch 'f[a-z][a-z]'
 'f0x' -cmatch 'f[a-z]|[A-Z]|[0-9]x'
 
 # this also works as its multiple ranges within a single character group
-'f0x' -cmatch 'f[a-zA-Z0-9]x'
+'fix' -cmatch 'f[a-zA-Z0-9]x'
 
 # \w for any word character, i.e. [a-zA-Z0-9_] includes underscore
 'f0x' -cmatch 'f\wx'
 $string -cmatch 'f\wx'
 
-# ^ means the start of the string. A type of anchor
+# ^ (caret) means the start of the string. A type of anchor
 $string -cmatch '^fox'
 $string -cmatch '^The'
 
@@ -70,7 +70,7 @@ $string -cmatch '^The.+dog$'
 'Jon' -cmatch '^Jo(n|hn)$'
 'John Savill' -cmatch '^Jo(n|hn)$'
 
-# * means zero or more
+# * (asterisk) means zero or more
 'abcdefg' -cmatch '^a.*g$'
 'ag' -cmatch '^a.*g$'
 'ag' -cmatch '^a.+g$' # + is one or more remember
