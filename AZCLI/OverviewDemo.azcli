@@ -3,7 +3,7 @@ az group list --debug --output table
 
 
 #Check the version
-az version
+az vm li
 #Get latest version
 az upgrade
 #this also upgrades any extensions install
