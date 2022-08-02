@@ -26,21 +26,40 @@ Connect-AzAccount -Identity
 }
 #>
 
-$VMID = 'VMRESOURCEIDHERE'
-$CIDRRange = '10.0.12.0/24'
+# Input bindings are passed in via param block.
+param($Timer)
+
+# Get the current universal time in the default string format.
+$currentUTCtime = (Get-Date).ToUniversalTime()
+
+# The 'IsPastDue' property is 'true' when the current function invocation is later than scheduled.
+if ($Timer.IsPastDue) {
+    Write-Host "PowerShell timer is running late!"
+}
+
+# Write an information log with the current time.
+Write-Host "Running the JIT enable: $currentUTCtime"
+
+$VMIDs = @('ID1','ID2')
+$CIDRRange = '10.0.12.0/24' #Azure Firewall
+$CIDRRange2 = '10.0.4.0/24' #Azure Bastion
 
 #end time in 20 hours
-$EndTime = (Get-Date -asutc).addhours(20) | Get-Date -format o
+$EndTime = (Get-Date).addhours(20) | Get-Date -format o
 
-$JitPolicyVm1 = (@{
-    id=$VMID;
-    ports=(@{
-       number=3389;
-       endTimeUtc=$EndTime;
-       allowedSourceAddressPrefix=@($CIDRRange)})})
+foreach($VMID in $VMIDs)
+{
 
-$JitPolicyArr=@($JitPolicyVm1)
+    $JitPolicyVm = (@{
+        id=$VMID;
+        ports=(@{
+            number=3389;
+            endTimeUtc=$EndTime;
+            allowedSourceAddressPrefix=@($CIDRRange,$CIDRRange2)})})
 
-$VMInfo = Get-AzResource -Id $VMID
+    $JitPolicyArr=@($JitPolicyVm)
 
-Start-AzJitNetworkAccessPolicy -ResourceGroupName $($VMInfo.ResourceGroupName) -Location $VMInfo.Location -Name "default" -VirtualMachine $JitPolicyArr
+    $VMInfo = Get-AzResource -Id $VMID
+
+    Start-AzJitNetworkAccessPolicy -ResourceGroupName $($VMInfo.ResourceGroupName) -Location $VMInfo.Location -Name "default" -VirtualMachine $JitPolicyArr
+}
