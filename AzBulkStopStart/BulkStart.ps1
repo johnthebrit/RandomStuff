@@ -1,3 +1,7 @@
+#this function definition must be in the profile.ps1 file and NOT the run.ps1
+#also need to add 'Az.ResourceGraph' = '0.*' to dependencies file along with az
+#restart the app after changing the dependencies
+
 function executeActionCommand
 {
     [CmdletBinding(SupportsShouldProcess)]
@@ -39,6 +43,9 @@ function executeActionCommand
         Write-Output $errorMessage
     }
 }
+
+
+#Main code time
 
 $mode="Start"
 #$mode="Stop"
