@@ -1,0 +1,38 @@
+{
+	"mode": "Indexed",
+	"policyRule": {
+        "if": {
+            "anyOf": [
+                {
+                "field": "tags.lockstatus",
+                "equals": "lock"
+                },
+                {
+                "allOf": [
+                    {
+                    "field": "type",
+                    "equals": "Microsoft.Storage/storageAccounts"
+                    },
+                    {
+                    "value": "[take(field('name'),9)]",
+                    "match": "stg##prod"
+                    }
+                ]
+                }
+            ]
+            },
+            "then": {
+            "effect": "DenyAction",
+            "details": {
+                "actionNames": [
+                "delete"
+                ],
+                "cascadeBehaviors": {
+                "resourceGroup": "deny"
+                }
+            }
+        }
+    }
+	,
+	"parameters": {}
+}
