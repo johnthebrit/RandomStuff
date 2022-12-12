@@ -1,7 +1,16 @@
+#Bulkstart.ps1
+#John Savill
+#
+#To download to your machine to a folder to then cope to your function app:
+#Save-Module Az.ResourceGraph .\modules
+#You can then zip it up and zip deploy into your function app
+#
 #this function definition must be in the profile.ps1 file and NOT the run.ps1
 #also need to uplodate az.resourcegraph into the modules child folder main function app
 #restart the app after changes to dependencies
-
+#at the start import the az.resourcegraph
+import-module az.resourcegraph
+#then at the end of profile.ps1
 function executeActionCommand
 {
     [CmdletBinding(SupportsShouldProcess)]
@@ -45,12 +54,12 @@ function executeActionCommand
 }
 
 
-#Main code time
+#Main code time with a version in each function as either start or stop uncommented
 
 $mode="Start"
 #$mode="Stop"
 
-$delayPeriod = 300 #wait 5 minutes between priority changes
+$delayPeriod = 120 #wait 2 minutes between priority changes or whatever you need
 
 if($mode -eq "Stop")
 {
