@@ -29,10 +29,10 @@ foreach($playlist in $playlists) {
     #Get the playlist items
     do {
         if($null -ne $response.nextPageToken) {
-            $urltofetch = "https://www.googleapis.com/youtube/v3/playlistItems?part=$($part)&maxResults=50&playlistId=$($playlist.id)&key=$($key)&pageToken=$($response.nextPageToken)"
+            $urltofetch = "https://www.googleapis.com/youtube/v3/playlistItems?part=$($part)&maxResults=50&&playlistId=$($playlist.id)&key=$($key)&pageToken=$($response.nextPageToken)"
         }
         else {
-            $urltofetch = "https://www.googleapis.com/youtube/v3/playlistItems?part=$($part)&maxResults=50&playlistId=$($playlist.id)&key=$($key)"
+            $urltofetch = "https://www.googleapis.com/youtube/v3/playlistItems?part=$($part)&maxResults=50&&playlistId=$($playlist.id)&key=$($key)"
         }
         $response = Invoke-RestMethod -Uri $urltofetch
         $items += $response.items
