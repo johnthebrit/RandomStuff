@@ -216,3 +216,30 @@ $Matches
 # Example of a RegEx I've used \s any whitespace \S any non-whitespace. This means non-greedy ANY character 0 or more times *?
 # Then captures ( ) the text I care about between div tags
 $regExFindNote = '<div class="column small-12">[\s\S]*?<div class="row column">([\s\S]*?)</div>'
+
+
+#Convert an SRT to YouTube style chapters
+$samplestring = @"
+1
+00:00:49,000 --> 00:00:54,000
+Bookmark 1
+
+2
+00:01:06,000 --> 00:01:11,000
+2nd item
+
+3
+00:01:13,000 --> 00:01:18,000
+Part 3
+
+"@
+#OR
+$samplestring = Get-Content S:\captures\bookmarks.srt -Raw
+
+#Any characters until a new line (windows or Linux format). The any new line is a non-capturing ?: group
+#Then we match for the timestamp but only save the first timestamp as a group
+#Then a new line and save the next text until a new line
+#Then we replace with just the bits we need BUT we also need to add a new line but need in double quote hence we concatenate two strings
+$samplestring -cmatch '[\s\S]*?(?:\r\n|\r|\n)(\d{2}:\d{2}:\d{2}),\d{3} --> \d{2}:\d{2}:\d{2},\d{3}(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)'
+$updatedstring = $samplestring -replace '[\s\S]*?(?:\r\n|\r|\n)(\d{2}:\d{2}:\d{2}),\d{3} --> \d{2}:\d{2}:\d{2},\d{3}(?:\r\n|\r|\n)([\s\S]*?)(?:\r\n|\r|\n)',$('$1 - $2'+"`n")
+$updatedstring | out-file S:\Captures\bookmarks.txt
