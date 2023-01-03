@@ -6,7 +6,11 @@ SetWorkingDir, %A_ScriptDir%
 
 ^!b::Run, https://www.bing.com/search?q=%Clipboard%
 
-:*?:att::AT&T ;this will replace without having to press space after. The ? triggers within a word and * does not need ending character (space or enter)
+;:*?:att::AT&T ;this will replace without having to press space after.
+;The ? triggers within a word and * does not need ending character (space or enter)
+;;however that also stops me typing the word attention I quickly found out :D
+
+::att::AT&T
 
 ::gj::
 Send Great job {U+1F919} ; to send unicode shaka symbol
