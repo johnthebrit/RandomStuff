@@ -16,6 +16,10 @@ Return
 oPowerPoint:=ComObjActive("PowerPoint.Application")
 oPowerPoint.ActivePresentation.SlideShowWindow.View.Next()
 Return
+^!e::
+Send ^!w   ;send the next PowerPoint slide key press
+Send ^!s   ;send my OBS hotkey to add a new chapter
+Return
 
 ;:*?:att::AT&T ;this will replace without having to press space after.
 ;The ? triggers within a word and * does not need ending character (space or enter)
