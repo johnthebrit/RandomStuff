@@ -21,6 +21,7 @@ oPowerPoint.ActivePresentation.SlideShowWindow.View.Next()
 Return
 ^!e::
 Send ^!w   ;send the next PowerPoint slide key press
+Sleep 500
 Send ^!s   ;send my OBS hotkey to add a new chapter
 Return
 
