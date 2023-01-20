@@ -14,7 +14,7 @@ $videoItems = $response.items
 $videoItemsInRange = $videoItems | Where-Object {([datetime]$_.snippet.publishedAt -ge $startDate) -and ([datetime]$_.snippet.publishedAt -le $endDate)} |
     Select-Object @{Name='id';Expression={$_.id.videoId}}, @{Name='title';Expression={$_.snippet.title}}, @{Name="date";Expression={[datetime]$_.snippet.publishedAt}}, @{Name='link';Expression={"https://youtu.be/$($_.id.videoId)"}}
 
-[array]::Reverse($videoItemsInRange) #oldest first
+#[array]::Reverse($videoItemsInRange) #oldest first
 
 $NewVideos = "<ul>"
 foreach($videoItem in $videoItemsInRange)
