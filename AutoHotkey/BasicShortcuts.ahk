@@ -38,6 +38,10 @@ If (TransLevel = 50) {
 }
 return
 
+;Sleep
+^!0::
+DllCall("PowrProf\SetSuspendState", "Int", 0, "Int", 0, "Int", 0)
+
 ;Toggle microphone mute found code on reddit, not mine!
 ^!m::
 SoundSet, +1, MASTER, mute,3
