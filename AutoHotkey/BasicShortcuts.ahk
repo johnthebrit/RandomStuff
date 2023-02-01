@@ -31,16 +31,19 @@ Return
 ;Toggle transparent for current Window
 ^!f::
 WinGet, TransLevel, Transparent, A
-If (TransLevel = 50) {
+If (TransLevel = 90) {
     WinSet, Transparent, OFF, A
 } Else {
-    WinSet, Transparent, 50, A
+    WinSet, Transparent, 90, A
 }
 return
 
 ;Sleep
 ^!0::
 DllCall("PowrProf\SetSuspendState", "Int", 0, "Int", 0, "Int", 0)
+
+;launch terminal
+^!c:: Run, wt.exe
 
 ;Toggle microphone mute found code on reddit, not mine!
 ^!m::
