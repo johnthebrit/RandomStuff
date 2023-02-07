@@ -47,8 +47,8 @@ DllCall("PowrProf\SetSuspendState", "Int", 0, "Int", 0, "Int", 0)
 
 ;Toggle microphone mute found code on reddit, not mine!
 ^!m::
-SoundSet, +1, MASTER, mute,3
-SoundGet, master_mute, , mute, 3
+SoundSet, +1, MASTER, mute,2
+SoundGet, master_mute, , mute, 2
 
 ToolTip, Mute %master_mute% ;use a tool tip at mouse pointer to show what state mic is after toggle
 SetTimer, RemoveToolTip, 1000
