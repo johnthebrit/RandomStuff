@@ -21,6 +21,8 @@ docker run --name alpine -dit alpine /bin/sh
 #From a different registry
 docker pull mcr.microsoft.com/cbl-mariner/base/core:2.0
 docker run --name mariner -dit mcr.microsoft.com/cbl-mariner/base/core:2.0 bash
+cat /etc/os-release
+docker exec mariner cat /etc/os-release
 
 #list containers
 docker ps -a
@@ -34,6 +36,7 @@ dockerPSID=$(ps aux | grep -v grep | grep $dockid | awk '{print $2}')
 sudo du -hc --max-depth=1 /var/lib/docker/containers/
 sudo ls -l /var/lib/docker/containers/$dockerlongid
 sudo cat /var/lib/docker/containers/$dockerlongid/config.v2.json
+
 
 #If stopped
 docker start $dockid
@@ -228,7 +231,23 @@ docker rm $dockid
 docker run --name ubuntu -dit --volume /mnt/c/users/john/onedrive/projects/git/randomstuff:/stuff ubuntu bash
 docker exec ubuntu ls /stuff
 
+
+#Can be different distributions
+#Note I don't have to pull the image first!
+docker run --name mariner -dit mcr.microsoft.com/cbl-mariner/base/core:2.0 bash
+cat /etc/os-release
+docker exec mariner cat /etc/os-release
+
+
+#See the containerd shim
+pstree -lpTs
+ctr
+
+
 #Cleanup my containers and images
+docker stop mariner
+docker rm mariner
+docker rmi mcr.microsoft.com/cbl-mariner/base/core:2.0
 docker stop ubuntu
 docker rm ubuntu
 docker rmi ubuntu
