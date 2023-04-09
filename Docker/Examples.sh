@@ -1,10 +1,12 @@
 #add user to the docker group so has access to the socket avoiding need for sudo on every command
 sudo usermod -aG docker $USER
 
+# region Introduction
 
 #Basic information
-docker --version #note we have both a client and server side
-docker system info
+docker --version
+docker system info  #note we have both a client and server side
+
 
 #Linux images
 docker pull ubuntu
@@ -13,8 +15,11 @@ docker image inspect ubuntu
 #Docker is adding its registry (Docker Hub) to the name entered, e.g. what is actually being pulled is:
 docker pull docker.io/library/ubuntu:latest
 #starting deteched -d but interactive -it so bash has a terminal to attach to and not exit straight away
+# Run new container with a name, detached/interactive, limit resources, use Ubuntu image and the container should run the bash process
 docker run --name ubuntu -dit --memory=256m --cpus="2" ubuntu bash
 
+
+#Some other examples
 docker pull alpine
 docker run --name alpine -dit alpine /bin/sh
 
@@ -23,6 +28,7 @@ docker pull mcr.microsoft.com/cbl-mariner/base/core:2.0
 docker run --name mariner -dit mcr.microsoft.com/cbl-mariner/base/core:2.0 bash
 cat /etc/os-release
 docker exec mariner cat /etc/os-release
+
 
 #list containers
 docker ps -a
@@ -43,8 +49,9 @@ docker start $dockid
 docker attach $dockid  #Ctrl P Q to exit and leave running. Or exit to stop
 #if in vs code add "terminal.integrated.sendKeybindingsToShell": true, to settings to stop Ctrl+P going to app
 
+# endregion
 
-#Cgroups
+# region Cgroups
 
 #How many cgroups
 cat /proc/cgroups
@@ -82,8 +89,10 @@ cat /sys/fs/cgroup/system.slice/docker-$dockerlongid.scope/memory.max
 #sudo apt install cgroup-tools
 lscgroup
 
+# endregion
 
-##Namespaces
+# region Namespaces
+
 #mine
 sudo ls -l /proc/$$/ns
 #docker process
@@ -110,7 +119,7 @@ docker exec ubuntu ps -eF
 docker exec ubuntu kill <pid>
 
 
-#Networking
+#Networking - Note this is a way more complex topic and namespace is just one small part of it
 docker network ls
 docker network inspect bridge
 #view the network namespaces
@@ -121,14 +130,15 @@ ip link
 #Note we have the physical adapter (eth0), the docker bridge and then a virtual adapter (veth) for the container
 
 #inside the container. Note, this is why later our writable layer is pretty big. Normally would not do this
-docker exec apt update
-docker exec apt install iproute2 -y
+docker exec ubuntu apt update
+docker exec ubuntu apt install iproute2 -y
 docker exec ubuntu ip link
 #it has its view
 
+# endregion
 
+# region Filesystem
 
-## Filesystem
 #View the storage driver information. overlay2 used
 docker info
 #see the file system. Care about the GraphDriver section
@@ -231,6 +241,9 @@ docker rm $dockid
 docker run --name ubuntu -dit --volume /mnt/c/users/john/onedrive/projects/git/randomstuff:/stuff ubuntu bash
 docker exec ubuntu ls /stuff
 
+# endregion
+
+# region Runtime
 
 #Can be different distributions
 #Note I don't have to pull the image first!
@@ -243,8 +256,9 @@ docker exec mariner cat /etc/os-release
 pstree -lpTs
 ctr
 
+# endregion
 
-#Cleanup my containers and images
+# region Cleanup
 docker stop mariner
 docker rm mariner
 docker rmi mcr.microsoft.com/cbl-mariner/base/core:2.0
@@ -254,3 +268,5 @@ docker rmi ubuntu
 
 #Clean up everything left over (images, build cache, stopped containers, networks)
 docker system prune
+
+# endregion
