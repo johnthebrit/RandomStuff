@@ -144,3 +144,13 @@ Resources
     PEVnet
 | summarize PECount = count() by PEVnet, PLSService
 | where PECount > 1
+
+#Just list them all
+Resources
+| where type == "microsoft.network/networkinterfaces"
+| where isnotnull(properties['privateEndpoint'])
+| extend subnet = properties['ipConfigurations'][0]['properties']['subnet']['id']
+| extend PEVnet = (substring(subnet,0,indexof(subnet,'/subnets')))
+| project id, name, provState = properties.provisioningState,
+    PLSService = tostring(properties['ipConfigurations'][0]['properties']['privateLinkConnectionProperties']['fqdns'][0]),
+    PEVnet
