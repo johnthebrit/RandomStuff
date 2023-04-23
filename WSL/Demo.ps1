@@ -170,7 +170,7 @@ john    ALL=(ALL) NOPASSWD:ALL
 ps -ef
 
 #Can see the full services for a distribution
-wsl --system -d Mariner ps -ef
+wsl --system -d Ubuntu ps -ef
 
 
 #File system mount of the ext4.vhdx -> /mnt/wslg
