@@ -24,6 +24,7 @@ If it does not start with 00: then it matches the time string using the named ca
 If it starts with 00: then it matches the time string using the same named capture group but with a different pattern 00:(?<time>[0-9]{2}:[0-9]{2}) that just captures minutes:seconds.
 The named capture group (?<time>) captures the matched time string for later use in replacement or other operations#>
 
+<#
 '02:05:34' -cmatch '(?(?!00:)(?<time>[0-9]{2}:[0-9]{2}:[0-9]{2})|00:(?<time>[0-9]{2}:[0-9]{2}))'
 $matches
 '00:05:34' -cmatch '(?(?!00:)(?<time>[0-9]{2}:[0-9]{2}:[0-9]{2})|00:(?<time>[0-9]{2}:[0-9]{2}))'
@@ -37,7 +38,7 @@ $matches
 $matches
 '02:05:34' -cmatch '(?(?!00:)(?:0*)(?<time>[0-9]+?:[0-9]{2}:[0-9]{2})|00:(?<time>[0-9]{2}:[0-9]{2}))'
 $matches
-
+#>
 #,\d{1,3} -->  - just find a comma then between 1 and 3 digits then the right arrow characters
 #then burns most of the rest of the string
 #(?<text>[\s\S]*?)  - any character 0 (*) or more times lazily (?) (few times as possible). basically until the next string specified is found (everything between the b tags). Stores as named group 'text'
