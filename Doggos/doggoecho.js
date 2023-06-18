@@ -22,8 +22,9 @@ try {
 
 			res.setHeader("content-type","text/html");
 
-            res.write("<html><body><img src='https://savilltech.com/images/zerosniffs.png'/><pre>");
-            res.write('************************\n');
+            res.write(`<html><body>Authenticated as <b> ${req.headers['userupn']} </b> ( ${req.headers['userdisplayname']} ) \n`);
+			res.write("<img src='https://savilltech.com/images/zerosniffs.png'/><pre>");
+            res.write('Debug Information:\n************************\n');
             res.write(`HTTP Version :  ${req.httpVersion} \n`);
             res.write(`Method :   ${req.method} \n`);
             res.write(`URL Path :  ${req.url} \n`);
