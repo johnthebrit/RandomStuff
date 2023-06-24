@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: azurediskpvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: acstor-azuredisk # replace with the name of your storage class if different
+  resources:
+    requests:
+      storage: 100Gi
