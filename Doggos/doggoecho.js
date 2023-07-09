@@ -22,7 +22,7 @@ try {
 
 			res.setHeader("content-type","text/html");
 
-            res.write(`<html><body>Authenticated as <b> ${req.headers['userupn']} </b> ( ${req.headers['userdisplayname']} ) \n`);
+            res.write(`<html><body>Authenticated as <b> ${req.headers['userupn']} </b> ( ${req.headers['userdisplayname']} ) <br> \n`);
 			res.write("<img src='https://savilltech.com/images/zerosniffs.png'/><pre>");
             res.write('Debug Information:\n************************\n');
             res.write(`HTTP Version :  ${req.httpVersion} \n`);
