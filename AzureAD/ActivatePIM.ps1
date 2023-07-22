@@ -1,10 +1,18 @@
-#Install-Module Microsoft.Graph.Beta.Identity.Governance
+[CmdletBinding(PositionalBinding=$false)]
+Param(
+    [Parameter(Mandatory, ValueFromRemainingArguments)]
+    [string]$Message
+)
+
+
+#Install-Module Microsoft.Graph.Beta.Identity.Governance -Scope AllUsers -Force
 Import-Module Microsoft.Graph.Beta.Identity.Governance
 
-Connect-MgGraph -Scopes RoleEligibilitySchedule.Read.Directory,RoleEligibilitySchedule.ReadWrite.Directory,RoleManagement.ReadWrite.Directory,RoleManagement.Read.Directory,RoleManagement.Read.All,PrivilegedEligibilitySchedule.ReadWrite.AzureADGroup,PrivilegedAccess.ReadWrite.AzureADGroup
+#Connect-MgGraph -Scopes User.Read.All,RoleEligibilitySchedule.Read.Directory,RoleEligibilitySchedule.ReadWrite.Directory,RoleManagement.ReadWrite.Directory,RoleManagement.Read.Directory,RoleManagement.Read.All,PrivilegedEligibilitySchedule.ReadWrite.AzureADGroup,PrivilegedAccess.ReadWrite.AzureADGroup
 $context = Get-MgContext
-$currentUser = (Get-MgUser -UserId $context.Account).Id
+$currentUser = (Get-MgUser -UserId $context.Account).Id #needs User.Read.All
 
+#to view groups available
 #Get-MgBetaIdentityGovernancePrivilegedAccessGroupEligibilityScheduleRequest -All
 
 $params = @{
@@ -19,7 +27,7 @@ $params = @{
 			endDateTime = (Get-Date).AddHours(2)
 		}
 	}
-	justification = "Gimme the group membership"
+	justification = $Message
 }
 
 New-MgBetaIdentityGovernancePrivilegedAccessGroupAssignmentScheduleRequest -BodyParameter $params
