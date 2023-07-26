@@ -20,6 +20,8 @@ if ($confirmation -ne 'y')
 foreach ($sub in $subs)
 {
     $errorFound = $false
+
+    #Set context to target subscription
     Write-Output "Subscription $sub"
     try {
         Set-AzContext -Subscription $sub -ErrorAction Stop
@@ -30,12 +32,12 @@ foreach ($sub in $subs)
         $errorFound = $true
     }
 
-    if(!$errorFound)
+    if(!$errorFound) #if no error
     {
         $subScope = "/subscriptions/$sub"
         $emailsToAdd = @()
 
-        #check the RG exists, $nameOfCoreResourceGroup
+        #check the core RG exists
         $coreRG = Get-AzResourceGroup -Name $nameOfCoreResourceGroup -ErrorAction SilentlyContinue
         if($null -eq $coreRG)
         {
@@ -50,7 +52,7 @@ foreach ($sub in $subs)
             foreach ($member in $members) {
                 if($member.scope -eq $subScope) #need to check specific to this sub and not inherited from MG
                 {
-                    Write-Output "$sub,$($member.DisplayName),$($member.SignInName),$($contrib.ObjectType)"
+                    #Write-Output "$sub,$($member.DisplayName),$($member.SignInName),$($contrib.ObjectType)"
                     if($null -ne $member.SignInName) #can only add if has email
                     {
                         $emailsToAdd += $member.SignInName
