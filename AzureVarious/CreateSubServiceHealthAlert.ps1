@@ -1,5 +1,5 @@
-$subs = Get-Content -Path sublist.txt
-$roles = @('Owner','Contributor')
+$subs = Get-Content -Path sublist.txt #this file should have one subscription ID per line
+$roles = @('Owner','Contributor') #These roles at the sub level if have email will be added to an action group to receive service health alerts
 
 $nameOfAlertRule = "Core-ServiceHealth-AR-DONOTRENAMEORDELETE"
 $nameOfAlertRuleDesc = "Core ServiceHealth Alert Rule DO NOT DELETE OR RENAME"
@@ -17,7 +17,8 @@ if ($confirmation -ne 'y')
     exit
 }
 
-foreach ($sub in $subs) {
+foreach ($sub in $subs)
+{
     $errorFound = $false
     Write-Output "Subscription $sub"
     try {
@@ -44,7 +45,7 @@ foreach ($sub in $subs) {
 
         foreach($role in $roles)
         {
-            write-output "Role $role"
+            #write-output "Role $role"
             $members = Get-AzRoleAssignment -Scope $subScope -RoleDefinitionName $role
             foreach ($member in $members) {
                 if($member.scope -eq $subScope) #need to check specific to this sub and not inherited from MG
@@ -64,6 +65,7 @@ foreach ($sub in $subs) {
         $AGObj = Get-AzActionGroup | Where-Object { $_.Name -eq $nameOfActionGroup }
         if($null -eq $AGObj) #not found
         {
+            Write-Output "Action Group not found, creating."
             #Note there is also the ability to link directly to an ARM role however would not be those ONLY at the sub scope
             $emailReceivers = @()
             foreach ($email in $emailsToAdd) {
@@ -73,11 +75,34 @@ foreach ($sub in $subs) {
             Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
             $AGObj = Get-AzActionGroup | Where-Object { $_.Name -eq $nameOfActionGroup }
         }
+        else
+        {
+            #Is the list matching the current emails
+            $currentEmails = $AGObj.EmailReceivers | Select-Object -ExpandProperty EmailAddress
+
+            #need to check it is new ones added so side indicator would be => as would be in the emails to add
+            $differences = Compare-Object -ReferenceObject $currentEmails -DifferenceObject $emailsToAdd | Where-Object { $_.SideIndicator -eq "=>"}
+            if($null -ne $differences) #if there are differences
+            {
+                #add them together then find just the unique (we add the existing as could be manually added emails we want to keep)
+                $emailstoAdd += $currentEmails
+                $emailsToAdd = $emailsToAdd | Select-Object -Unique
+
+                #Now update the action group
+                $emailReceivers = @()
+                foreach ($email in $emailsToAdd) {
+                    $emailReceiver = New-AzActionGroupReceiver -EmailReceiver -EmailAddress $email -Name $email
+                    $emailReceivers += $emailReceiver
+                }
+                Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
+            }
+        }
 
         #Look for the Alert Rule
         $ARObj = Get-AzActivityLogAlert | Where-Object { $_.Name -eq $nameOfAlertRule }
         if($null -eq $ARObj) #not found
         {
+            Write-Output "Alert Rule not found, creating."
             $location = 'Global'
             #$condition1 = New-AzActivityLogAlertCondition -Field 'category' -Equal 'ServiceHealth'
             $condition1 = New-AzActivityLogAlertAlertRuleAnyOfOrLeafConditionObject -Field 'category' -Equal 'ServiceHealth'
