@@ -4,6 +4,7 @@ Microsoft.Insights/ActionGroups/Write
 Microsoft.Resources/subscriptions/resourcegroups/write
 
 NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy, e.g. for the action group targets
+Just use https://github.com/Azure/azure-quickstart-templates/blob/master/demos/monitor-servicehealth-alert/azuredeploy.json and replace the emailReceivers part with:
 "armRoleReceivers": [
     {
         "name": "Email Owner",
