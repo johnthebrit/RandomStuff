@@ -3,7 +3,19 @@ Microsoft.Insights/ActivityLogAlerts/Write
 Microsoft.Insights/ActionGroups/Write
 Microsoft.Resources/subscriptions/resourcegroups/write
 
-NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy
+NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy, e.g. for the action group targets
+"armRoleReceivers": [
+    {
+        "name": "Email Owner",
+        "roleId": "8e3af657-a8ff-443c-a75c-2fe8c4bcb635",
+        "useCommonAlertSchema": true
+    },
+    {
+        "name": "Email Contrib",
+        "roleId": "b24988ac-6180-42a0-ab88-20f7382dd24c",
+        "useCommonAlertSchema": true
+    }
+]
 #>
 $subs = Get-Content -Path sublist.txt #this file should have one subscription ID per line
 $roles = @('Owner','Contributor') #These roles at the sub level if have email will be added to an action group to receive service health alerts
