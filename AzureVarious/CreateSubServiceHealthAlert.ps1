@@ -1,3 +1,10 @@
+<#To execute would require the following permissions:
+Microsoft.Insights/ActivityLogAlerts/Write
+Microsoft.Insights/ActionGroups/Write
+Microsoft.Resources/subscriptions/resourcegroups/write
+
+NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy
+#>
 $subs = Get-Content -Path sublist.txt #this file should have one subscription ID per line
 $roles = @('Owner','Contributor') #These roles at the sub level if have email will be added to an action group to receive service health alerts
 
@@ -68,7 +75,7 @@ foreach ($sub in $subs)
         if($null -eq $AGObj) #not found
         {
             Write-Output "Action Group not found, creating."
-            #Note there is also the ability to link directly to an ARM role however would not be those ONLY at the sub scope
+            #Note there is also the ability to link directly to an ARM role which per the documentation only is if assigned AT THE SUB and NOT inherited
             $emailReceivers = @()
             foreach ($email in $emailsToAdd) {
                 $emailReceiver = New-AzActionGroupReceiver -EmailReceiver -EmailAddress $email -Name $email
