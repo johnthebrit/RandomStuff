@@ -17,10 +17,10 @@ Just use https://github.com/Azure/azure-quickstart-templates/blob/master/demos/m
         "useCommonAlertSchema": true
     }
 ]
-#>
 
-#If debug and want to see verbose
-#$VerbosePreference = "Continue"
+If debug and want to see verbose
+$VerbosePreference = "Continue"
+#>
 
 $subs = Get-Content -Path sublist.txt #this file should have one subscription ID per line
 $roles = @('Owner','Contributor') #These roles at the sub level if have email will be added to an action group to receive service health alerts
