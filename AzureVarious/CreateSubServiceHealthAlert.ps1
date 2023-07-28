@@ -24,6 +24,9 @@ $VerbosePreference = "Continue"
 
 $subs = Get-Content -Path sublist.txt #this file should have one subscription ID per line
 $roles = @('Owner','Contributor') #These roles at the sub level if have email will be added to an action group to receive service health alerts
+#Enable one of the following based on if there are specific groups that have roles you DON'T want included in health alerts
+$groupsToSkip = @('Jl','Avengers')
+#$groupsToSkip = @() #if none
 
 $nameOfAlertRule = "Core-ServiceHealth-AR-DONOTRENAMEORDELETE"
 $nameOfAlertRuleDesc = "Core ServiceHealth Alert Rule DO NOT DELETE OR RENAME"
@@ -82,9 +85,13 @@ foreach ($sub in $subs)
                     #Change to support groups and enumerate for members via Get-AzADGroupMember -GroupDisplayName
                     if($member.ObjectType -eq 'Group')
                     {
-                        Write-Verbose "Group found $($member.DisplayName) - Expanding"
-                        $groupMembers = Get-AzADGroupMember -GroupDisplayName $member.DisplayName
-                        $emailsToAdd += $groupmembers | Where-Object {$_.Mail -ne $null} | select-object -ExpandProperty Mail #we only add if has an email attribute
+                        #check if the group should be excluded ($groupsToSkip)
+                        if($groupsToSkip -notcontains $member.DisplayName)
+                        {
+                            Write-Verbose "Group found $($member.DisplayName) - Expanding"
+                            $groupMembers = Get-AzADGroupMember -GroupDisplayName $member.DisplayName
+                            $emailsToAdd += $groupmembers | Where-Object {$_.Mail -ne $null} | select-object -ExpandProperty Mail #we only add if has an email attribute
+                        }
                     }
 
                     #Can also check the email for users incase their email is different from UPN via Get-AzADUser -UserPrincipalName
