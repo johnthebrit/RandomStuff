@@ -18,6 +18,10 @@ Just use https://github.com/Azure/azure-quickstart-templates/blob/master/demos/m
     }
 ]
 #>
+
+#If debug and want to see verbose
+#$VerbosePreference = "Continue"
+
 $subs = Get-Content -Path sublist.txt #this file should have one subscription ID per line
 $roles = @('Owner','Contributor') #These roles at the sub level if have email will be added to an action group to receive service health alerts
 
@@ -68,35 +72,62 @@ foreach ($sub in $subs)
         foreach($role in $roles)
         {
             #write-output "Role $role"
+            #Note this will get all of this role at this scope and CHILD (e.g. also RGs so we have to continue to filter)
             $members = Get-AzRoleAssignment -Scope $subScope -RoleDefinitionName $role
             foreach ($member in $members) {
-                if($member.scope -eq $subScope) #need to check specific to this sub and not inherited from MG
+                if($member.scope -eq $subScope) #need to check specific to this sub and not inherited from MG or a child RG
                 {
-                    #Write-Output "$sub,$($member.DisplayName),$($member.SignInName),$($contrib.ObjectType)"
-                    if($null -ne $member.SignInName) #can only add if has email
+                    Write-Verbose "$sub,$($member.DisplayName),$($member.SignInName),$($contrib.ObjectType)"
+
+                    #Change to support groups and enumerate for members via Get-AzADGroupMember -GroupDisplayName
+                    if($member.ObjectType -eq 'Group')
                     {
-                        $emailsToAdd += $member.SignInName
+                        Write-Verbose "Group found $($member.DisplayName) - Expanding"
+                        $groupMembers = Get-AzADGroupMember -GroupDisplayName $member.DisplayName
+                        $emailsToAdd += $groupmembers | Where-Object {$_.Mail -ne $null} | select-object -ExpandProperty Mail #we only add if has an email attribute
+                    }
+
+                    #Can also check the email for users incase their email is different from UPN via Get-AzADUser -UserPrincipalName
+                    if($member.ObjectType -eq 'User')
+                    {
+                        Write-Verbose "User found $($member.SignInName) - Checking for email attribute"
+                        $userDetail = Get-AzADUser -UserPrincipalName $member.SignInName
+                        if($null -ne $userDetail.Mail)
+                        {
+                            $emailsToAdd += $userDetail.Mail
+                        }
                     }
                 }
             }
         }
         $emailsToAdd = $emailsToAdd | Select-Object -Unique #Remove duplicated, i.e. if multiple of the roles
-        #$emailsToAdd
+        Write-Verbose "Emails to add: $emailsToAdd"
 
         #Look for the Action Group
         $AGObj = Get-AzActionGroup | Where-Object { $_.Name -eq $nameOfActionGroup }
+        $AGObjFailure = $false
         if($null -eq $AGObj) #not found
         {
             Write-Output "Action Group not found, creating."
-            #Note there is also the ability to link directly to an ARM role which per the documentation only is if assigned AT THE SUB and NOT inherited
-            $emailReceivers = @()
-            foreach ($email in $emailsToAdd) {
-                $emailReceiver = New-AzActionGroupReceiver -EmailReceiver -EmailAddress $email -Name $email
-                $emailReceivers += $emailReceiver
+            if($emailsToAdd.Count -gt 0)
+            {
+                #Note there is also the ability to link directly to an ARM role which per the documentation only is if assigned AT THE SUB and NOT inherited
+                $emailReceivers = @()
+                foreach ($email in $emailsToAdd) {
+                    $emailReceiver = New-AzActionGroupReceiver -EmailReceiver -EmailAddress $email -Name $email
+                    $emailReceivers += $emailReceiver
+                }
+
+                Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
+                $AGObj = Get-AzActionGroup | Where-Object { $_.Name -eq $nameOfActionGroup }
             }
-            Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
-            $AGObj = Get-AzActionGroup | Where-Object { $_.Name -eq $nameOfActionGroup }
+            else
+            {
+                Write-Error "Could not create action group for subscription $sub as no valid emails found. This will also stop alert rule creation"
+                $AGObjFailure = $true
+            }
         }
+        <# Currently the update does NOT work. It fails on the Set-AzActionGroup command. unclear why. Researching
         else
         {
             #Is the list matching the current emails
@@ -118,15 +149,14 @@ foreach ($sub in $subs)
                 }
                 Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
             }
-        }
+        }#>
 
         #Look for the Alert Rule
         $ARObj = Get-AzActivityLogAlert | Where-Object { $_.Name -eq $nameOfAlertRule }
-        if($null -eq $ARObj) #not found
+        if(($null -eq $ARObj) -and (!$AGObjFailure)) #not found and not a failure creating the action group
         {
             Write-Output "Alert Rule not found, creating."
             $location = 'Global'
-            #$condition1 = New-AzActivityLogAlertCondition -Field 'category' -Equal 'ServiceHealth'
             $condition1 = New-AzActivityLogAlertAlertRuleAnyOfOrLeafConditionObject -Field 'category' -Equal 'ServiceHealth'
             $actionGroupsHashTable = @{ Id = $AGObj.Id; WebhookProperty = ""}
             New-AzActivityLogAlert -Location $location -Name $nameOfAlertRule -ResourceGroupName $nameOfCoreResourceGroup -Scope $subScope -Action $actionGroupsHashTable -Condition $condition1 `
