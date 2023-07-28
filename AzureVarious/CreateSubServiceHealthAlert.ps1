@@ -127,7 +127,6 @@ foreach ($sub in $subs)
                 $AGObjFailure = $true
             }
         }
-        <# Currently the update does NOT work. It fails on the Set-AzActionGroup command. unclear why. Researching
         else
         {
             #Is the list matching the current emails
@@ -147,9 +146,19 @@ foreach ($sub in $subs)
                     $emailReceiver = New-AzActionGroupReceiver -EmailReceiver -EmailAddress $email -Name $email
                     $emailReceivers += $emailReceiver
                 }
-                Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
+
+                try
+                {
+                    Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
+                }
+                catch
+                {
+                    Write-Output "Error updating action group for $sub"
+                    Write-Output $_
+                    $emailReceivers
+                }
             }
-        }#>
+        }
 
         #Look for the Alert Rule
         $ARObj = Get-AzActivityLogAlert | Where-Object { $_.Name -eq $nameOfAlertRule }
