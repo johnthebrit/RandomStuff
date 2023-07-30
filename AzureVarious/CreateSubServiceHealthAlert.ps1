@@ -4,6 +4,7 @@ Microsoft.Insights/ActionGroups/Write
 Microsoft.Resources/subscriptions/resourcegroups/write
 
 NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy, e.g. for the action group targets
+NOTE - This will NOT work if they are groups. If groups have the roles you will need to use this script approach
 Just use https://github.com/Azure/azure-quickstart-templates/blob/master/demos/monitor-servicehealth-alert/azuredeploy.json and replace the emailReceivers part with:
 "armRoleReceivers": [
     {
@@ -54,8 +55,8 @@ foreach ($sub in $subs)
         Set-AzContext -Subscription $sub -ErrorAction Stop
     }
     catch {
-        Write-Output "Subscription error:"
-        Write-Output $_
+        Write-Error "Subscription error:"
+        Write-Error $_
         $errorFound = $true
     }
 
@@ -74,7 +75,7 @@ foreach ($sub in $subs)
 
         foreach($role in $roles)
         {
-            #write-output "Role $role"
+            Write-Verbose "Role $role"
             #Note this will get all of this role at this scope and CHILD (e.g. also RGs so we have to continue to filter)
             $members = Get-AzRoleAssignment -Scope $subScope -RoleDefinitionName $role
             foreach ($member in $members) {
@@ -160,8 +161,8 @@ foreach ($sub in $subs)
                 }
                 catch
                 {
-                    Write-Output "Error updating action group for $sub"
-                    Write-Output $_
+                    Write-Error "Error updating action group for $sub"
+                    Write-Error $_
                     $emailReceivers
                 }
             }
