@@ -19,6 +19,11 @@ Just use https://github.com/Azure/azure-quickstart-templates/blob/master/demos/m
     }
 ]
 
+To output a list of all your subscription IDs using Resource Graph you can use
+resourcecontainers
+    | where type=='microsoft.resources/subscriptions'
+    | project subscriptionId
+
 If debug and want to see verbose
 $VerbosePreference = "Continue"
 #>
@@ -55,7 +60,7 @@ foreach ($sub in $subs)
         Set-AzContext -Subscription $sub -ErrorAction Stop
     }
     catch {
-        Write-Error "Subscription error:"
+        Write-Error "!! Subscription error:"
         Write-Error $_
         $errorFound = $true
     }
@@ -131,7 +136,7 @@ foreach ($sub in $subs)
             }
             else
             {
-                Write-Error "Could not create action group for subscription $sub as no valid emails found. This will also stop alert rule creation"
+                Write-Error "!! Could not create action group for subscription $sub as no valid emails found. This will also stop alert rule creation"
                 $AGObjFailure = $true
             }
         }
@@ -161,7 +166,7 @@ foreach ($sub in $subs)
                 }
                 catch
                 {
-                    Write-Error "Error updating action group for $sub"
+                    Write-Error "!! Error updating action group for $sub"
                     Write-Error $_
                     $emailReceivers
                 }
