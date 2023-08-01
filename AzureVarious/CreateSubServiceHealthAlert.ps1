@@ -5,7 +5,7 @@ Microsoft.Resources/subscriptions/resourcegroups/write
 
 NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy, e.g. for the action group targets
 NOTE - This will NOT work if they are groups. If groups have the roles you will need to use this script approach
-Just use https://github.com/Azure/azure-quickstart-templates/blob/master/demos/monitor-servicehealth-alert/azuredeploy.json and replace the emailReceivers part with:
+For the template to deploy use https://github.com/Azure/azure-quickstart-templates/blob/master/demos/monitor-servicehealth-alert/azuredeploy.json and replace the emailReceivers part with:
 "armRoleReceivers": [
     {
         "name": "Email Owner",
@@ -31,8 +31,8 @@ $VerbosePreference = "Continue"
 $subs = Get-Content -Path sublist.txt #this file should have one subscription ID per line
 $roles = @('Owner','Contributor') #These roles at the sub level if have email will be added to an action group to receive service health alerts
 #Enable one of the following based on if there are specific groups that have roles you DON'T want included in health alerts
-$groupsToSkip = @('Jl','Avengers')
-#$groupsToSkip = @() #if none
+#$groupsToSkip = @('Jl','Avengers')
+$groupsToSkip = @() #if none
 
 $nameOfAlertRule = "Core-ServiceHealth-AR-DONOTRENAMEORDELETE"
 $nameOfAlertRuleDesc = "Core ServiceHealth Alert Rule DO NOT DELETE OR RENAME"
@@ -83,6 +83,8 @@ foreach ($sub in $subs)
             Write-Verbose "Role $role"
             #Note this will get all of this role at this scope and CHILD (e.g. also RGs so we have to continue to filter)
             $members = Get-AzRoleAssignment -Scope $subScope -RoleDefinitionName $role
+            #$members | ft objectType, RoleDefinitionName, DisplayName, SignInName
+
             foreach ($member in $members) {
                 if($member.scope -eq $subScope) #need to check specific to this sub and not inherited from MG or a child RG
                 {
