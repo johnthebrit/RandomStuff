@@ -1,0 +1,49 @@
+{
+    "mode": "All",
+    "policyRule": {
+      "if": {
+        "allOf": [
+          {
+            "field": "type",
+            "equals": "Microsoft.Resources/subscriptions"
+          }
+        ]
+      },
+      "then": {
+        "effect": "[parameters('effect')]",
+        "details": {
+          "type": "Microsoft.Insights/ActivityLogAlerts",
+          "existenceCondition": {
+            "allOf": [
+              {
+                "field": "Microsoft.Insights/ActivityLogAlerts/enabled",
+                "equals": "true"
+              },
+                          {
+                              "field": "Microsoft.Insights/ActivityLogAlerts/condition.allOf[*].field",
+                              "equals": "category"
+                          },
+                          {
+                              "field": "Microsoft.Insights/ActivityLogAlerts/condition.allOf[*].equals",
+                              "equals": "ServiceHealth"
+                          }
+                      ]
+          }
+        }
+      }
+    },
+    "parameters": {
+      "effect": {
+        "type": "String",
+        "metadata": {
+          "displayName": "Effect",
+          "description": "Enable or disable the execution of the policy"
+        },
+        "allowedValues": [
+          "AuditIfNotExists",
+          "Disabled"
+        ],
+        "defaultValue": "AuditIfNotExists"
+      }
+    }
+  }
