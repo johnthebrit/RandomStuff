@@ -15,19 +15,19 @@
           "type": "Microsoft.Insights/ActivityLogAlerts",
           "existenceCondition": {
             "allOf": [
-              {
+                {
                 "field": "Microsoft.Insights/ActivityLogAlerts/enabled",
                 "equals": "true"
-              },
-                          {
-                              "field": "Microsoft.Insights/ActivityLogAlerts/condition.allOf[*].field",
-                              "equals": "category"
-                          },
-                          {
-                              "field": "Microsoft.Insights/ActivityLogAlerts/condition.allOf[*].equals",
-                              "equals": "ServiceHealth"
-                          }
-                      ]
+                },
+                {
+                    "field": "Microsoft.Insights/ActivityLogAlerts/condition.allOf[*].field",
+                    "equals": "category"
+                },
+                {
+                    "field": "Microsoft.Insights/ActivityLogAlerts/condition.allOf[*].equals",
+                    "equals": "ServiceHealth"
+                }
+            ]
           }
         }
       }
