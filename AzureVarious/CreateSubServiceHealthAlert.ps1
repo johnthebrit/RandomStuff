@@ -2,6 +2,9 @@
 Microsoft.Insights/ActivityLogAlerts/Write
 Microsoft.Insights/ActionGroups/Write
 Microsoft.Resources/subscriptions/resourcegroups/write
+Microsoft.Insights/ActivityLogAlerts/Read
+Microsoft.Insights/ActionGroups/Read
+Microsoft.Resources/subscriptions/resourcegroups/Read
 
 NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy, e.g. for the action group targets
 NOTE - This will NOT work if they are groups. If groups have the roles you will need to use this script approach
