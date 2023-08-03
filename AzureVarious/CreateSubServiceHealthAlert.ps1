@@ -1,10 +1,10 @@
 <#To execute would require the following permissions:
-Microsoft.Insights/ActivityLogAlerts/Write
-Microsoft.Insights/ActionGroups/Write
-Microsoft.Resources/subscriptions/resourcegroups/write
 Microsoft.Insights/ActivityLogAlerts/Read
+Microsoft.Insights/ActivityLogAlerts/Write
 Microsoft.Insights/ActionGroups/Read
+Microsoft.Insights/ActionGroups/Write
 Microsoft.Resources/subscriptions/resourcegroups/Read
+Microsoft.Resources/subscriptions/resourcegroups/Write
 
 NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy, e.g. for the action group targets
 NOTE - This will NOT work if they are groups. If groups have the roles you will need to use this script approach
@@ -180,6 +180,9 @@ foreach ($sub in $subs)
 
         #Look for the Alert Rule
         $ARObj = Get-AzActivityLogAlert | Where-Object { $_.Name -eq $nameOfAlertRule }
+        #If wanted to find if ANY Alert Rule existed for Service Health and then could add an -and (ANYARSHFound -ne $null) to below condition
+        #$ANYARSHFound = Get-AzActivityLogAlert | Format-List | out-string | select-string "`"equals`": `"ServiceHealth`""
+
         if(($null -eq $ARObj) -and (!$AGObjFailure)) #not found and not a failure creating the action group
         {
             Write-Output "Alert Rule not found, creating."
