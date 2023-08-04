@@ -29,6 +29,10 @@ resourcecontainers
 
 If debug and want to see verbose
 $VerbosePreference = "Continue"
+
+** Note This script is based on a RBAC role assigned. If you use PIM and RBAC assignment is not useful
+it would be easy to change the script to look for a subscription level "Owner" or "Contact" tag you set
+which could then be read and the values added to the action group!
 #>
 
 $subs = Get-Content -Path sublist.txt #this file should have one subscription ID per line
