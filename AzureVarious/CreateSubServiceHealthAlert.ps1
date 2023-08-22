@@ -49,6 +49,10 @@ $nameOfCoreResourceGroup = "Core-ServiceHealth-RG-DONOTRENAMEORDELETE"
 $nameOfLocation = "eastus2"
 
 
+#set this to true if the existing action group members should be replaced completely if the action group already exists instead of having new people appended to existing members
+$REPLACENOTADD = $false
+
+
 Write-Output "Input $($subs.count) subscriptions."
 $confirmation = Read-Host "Are you Sure You Want To Proceed:"
 if ($confirmation -ne 'y')
@@ -151,34 +155,37 @@ foreach ($sub in $subs)
         }
         else
         {
-            #Is the list matching the current emails
-            $currentEmails = $AGObj.EmailReceivers | Select-Object -ExpandProperty EmailAddress
-
-            #need to check it is new ones added so side indicator would be => as would be in the emails to add
-            $differences = Compare-Object -ReferenceObject $currentEmails -DifferenceObject $emailsToAdd | Where-Object { $_.SideIndicator -eq "=>"}
-            if($null -ne $differences) #if there are differences
+            if(!$REPLACENOTADD)
             {
-                #add them together then find just the unique (we add the existing as could be manually added emails we want to keep)
-                $emailstoAdd += $currentEmails
-                $emailsToAdd = $emailsToAdd | Select-Object -Unique
+                #Is the list matching the current emails
+                $currentEmails = $AGObj.EmailReceivers | Select-Object -ExpandProperty EmailAddress
 
-                #Now update the action group
-                $emailReceivers = @()
-                foreach ($email in $emailsToAdd) {
-                    $emailReceiver = New-AzActionGroupReceiver -EmailReceiver -EmailAddress $email -Name $email
-                    $emailReceivers += $emailReceiver
+                #need to check it is new ones added so side indicator would be => as would be in the emails to add
+                $differences = Compare-Object -ReferenceObject $currentEmails -DifferenceObject $emailsToAdd | Where-Object { $_.SideIndicator -eq "=>"}
+                if($null -ne $differences) #if there are differences
+                {
+                    #add them together then find just the unique (we add the existing as could be manually added emails we want to keep)
+                    $emailstoAdd += $currentEmails
+                    $emailsToAdd = $emailsToAdd | Select-Object -Unique
                 }
+            }
 
-                try
-                {
-                    Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
-                }
-                catch
-                {
-                    Write-Error "!! Error updating action group for $sub"
-                    Write-Error $_
-                    $emailReceivers
-                }
+            #Now update the action group
+            $emailReceivers = @()
+            foreach ($email in $emailsToAdd) {
+                $emailReceiver = New-AzActionGroupReceiver -EmailReceiver -EmailAddress $email -Name $email
+                $emailReceivers += $emailReceiver
+            }
+
+            try
+            {
+                Set-AzActionGroup -ResourceGroupName $nameOfCoreResourceGroup -Name $nameOfActionGroup -ShortName $nameOfActionGroupShort -Receiver $emailReceivers
+            }
+            catch
+            {
+                Write-Error "!! Error updating action group for $sub"
+                Write-Error $_
+                $emailReceivers
             }
         }
 
