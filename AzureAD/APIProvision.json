@@ -1,0 +1,148 @@
+{
+    "schemas": ["urn:ietf:params:scim:api:messages:2.0:BulkRequest"],
+    "Operations": [
+    {
+        "method": "POST",
+        "bulkId": "00003",
+        "path": "/Users",
+        "data": {
+            "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User",
+            "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User"],
+            "externalId": "00003",
+            "userName": "bruce@savilltech.net",
+            "active":true
+        }
+    },
+    {
+        "method": "POST",
+        "bulkId": "00005",
+        "path": "/Users",
+        "data": {
+            "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User",
+            "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+            "urn:ietf:params:scim:schemas:extension:savilltech:1.0:User"],
+            "externalId": "00005",
+            "userName": "barbara@clocktower.com",
+            "name": {
+                "formatted": "Ms. Barbara Gordon",
+                "familyName": "Gordon",
+                "givenName": "Barbara",
+                "honorificPrefix": "Ms."
+            },
+            "displayName": "Barbara Gordon",
+            "nickName": "Barbara",
+            "emails": [
+            {
+              "value": "barbara@clocktower.com",
+              "type": "work",
+              "primary": true
+            }
+            ],
+            "addresses": [
+            {
+              "type": "work",
+              "streetAddress": "101 Clock Tower",
+              "locality": "Gotham",
+              "region": "NJ",
+              "postalCode": "07555",
+              "country": "USA",
+              "formatted": "101 Clock Tower, Gotham, NJ 07555 USA",
+              "primary": true
+            }
+            ],
+            "phoneNumbers": [
+            {
+              "value": "555-555-5555",
+              "type": "work"
+            }
+            ],
+            "userType": "Employee",
+            "title": "Operator",
+            "preferredLanguage": "en-US",
+            "locale": "en-US",
+            "timezone": "America/New_Jersey",
+            "active":true,
+            "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User": {
+                "employeeNumber": "00005",
+                "costCenter": "0555",
+                "organization": "Wayne Enterprises",
+                "division": "Support",
+                "department": "Operations",
+                "manager": {
+                  "value": "00003",
+                  "displayName": "Bruce Wayne"
+                 }
+            },
+            "urn:ietf:params:scim:schemas:extension:savilltech:1.0:User": {
+                "HireDate": "2018-05-01T00:00:00-05:00"
+            }
+        }
+    },
+    {
+        "method": "POST",
+        "bulkId": "00006",
+        "path": "/Users",
+        "data": {
+            "schemas": ["urn:ietf:params:scim:schemas:core:2.0:User",
+            "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User",
+            "urn:ietf:params:scim:schemas:extension:savilltech:1.0:User"],
+            "externalId": "00006",
+            "userName": "dinah@clocktower.com",
+            "name": {
+                "formatted": "Ms. Dinah Lance",
+                "familyName": "Lance",
+                "givenName": "Dinah",
+                "honorificPrefix": "Ms."
+            },
+            "displayName": "Dinah Lance",
+            "nickName": "Dinah",
+            "emails": [
+            {
+              "value": "dinah@clocktower.com",
+              "type": "work",
+              "primary": true
+            }
+            ],
+            "addresses": [
+            {
+              "type": "work",
+              "streetAddress": "101 Clock Tower",
+              "locality": "Gotham",
+              "region": "NJ",
+              "postalCode": "07555",
+              "country": "USA",
+              "formatted": "101 Clock Tower, Gotham, NJ 07555 USA",
+              "primary": true
+            }
+            ],
+            "phoneNumbers": [
+            {
+              "value": "555-555-5556",
+              "type": "work"
+            }
+            ],
+            "userType": "Employee",
+            "title": "Operator",
+            "preferredLanguage": "en-US",
+            "locale": "en-US",
+            "timezone": "America/New_Jersey",
+            "active":true,
+            "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User": {
+                "employeeNumber": "00006",
+                "costCenter": "0555",
+                "organization": "Wayne Enterprises",
+                "division": "Support",
+                "department": "Operations",
+                "manager": {
+                  "value": "00003",
+                  "displayName": "Bruce Wayne"
+                 }
+            },
+            "urn:ietf:params:scim:schemas:extension:savilltech:1.0:User": {
+                "HireDate": "2022-07-15T00:00:00-05:00"
+            }
+        }
+    }
+],
+    "failOnErrors": null
+}
