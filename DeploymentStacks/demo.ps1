@@ -1,5 +1,8 @@
 Set-Location .\DeploymentStacks
 
+# A regular deployment
+az deployment group create --name "<name of deployment>" -g "<resource group>" -f "<json of bicep>" -l "<location>"
+
 
 # DEMO 1 - Simple create at RG scope and actionOnUnmanage examples
 
