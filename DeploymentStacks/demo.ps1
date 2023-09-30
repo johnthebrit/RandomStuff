@@ -61,8 +61,11 @@ az stack mg list -m SavillTechSubs
 az stack sub list
 
 az stack mg show -m SavillTechSubs -n demoMgStack
+
+# Create a template for me of the stack
 az stack mg export -m SavillTechSubs -n demoMgStack
 
-#Not even I can delete the storage accounts
+# Not even I can delete the storage accounts
 
+# Once again clean up easy no matter how distributed. Could be multiple subs etc
 az stack mg delete -m SavillTechSubs --name demoMgStack --delete-all
