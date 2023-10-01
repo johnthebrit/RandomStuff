@@ -10,10 +10,13 @@ az stack group create --name demoGroupStack -g rgstacktest -f oneStack.bicep --d
 
 # Comment out a resource then run again which will default to detach (will show as such in stack)
 az stack group create --name demoGroupStack -g rgstacktest -f oneStack.bicep --deny-settings-mode None
+
 # Remove the comments and this time just automate the yes (back)
 az stack group create --name demoGroupStack -g rgstacktest -f oneStack.bicep --deny-settings-mode None --yes
+
 # Comment out the resource then run again this type specifying delete as the actionOnUnmanage. Will remove from stack and Azure (not in RG)
 az stack group create --name demoGroupStack -g rgstacktest -f oneStack.bicep --deny-settings-mode None --delete-all
+
 # Show the deny settings. Only John can delete as excluded, others (Clark, an owner of RG) will get detailed error why they cannot
 az stack group create --name demoGroupStack -g rgstacktest -f oneStack.bicep --deny-settings-mode DenyDelete `
     --deny-settings-excluded-principals "ed17220d-a6d8-45d0-a7bd-2aadc44c39e7" --yes
