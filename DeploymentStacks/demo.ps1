@@ -1,4 +1,5 @@
 Set-Location .\DeploymentStacks
+$subid = <your subscription ID>
 
 # A regular deployment
 az deployment group create --name "<name of deployment>" -g "<resource group>" -f "<json of bicep>" -l "<location>"
@@ -58,7 +59,7 @@ az stack sub delete --name demoSubStack --delete-all
 az stack mg list -m SavillTechSubs
 
 az stack mg create -m SavillTechSubs -n demoMgStack -f toMGRGstorage.bicep --location southcentralus `
-    --parameters subscriptionID=466c1a5d-e93b-4138-91a5-670daf44b0f8 `
+    --parameters subscriptionID=$subid `
     --deny-settings-mode DenyWriteAndDelete
 
 az stack mg list -m SavillTechSubs
