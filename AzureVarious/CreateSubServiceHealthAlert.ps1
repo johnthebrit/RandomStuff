@@ -6,6 +6,8 @@ Microsoft.Insights/ActionGroups/Write
 Microsoft.Resources/subscriptions/resourcegroups/Read
 Microsoft.Resources/subscriptions/resourcegroups/Write
 
+Also should have the “Directory Readers” AAD role
+
 NOTE - If you only need standard ARM roles like Owner and Contributor you could instead simply target the ARM role for email via policy, e.g. for the action group targets
 NOTE - This will NOT work if they are groups. If groups have the roles you will need to use this script approach
 For the template to deploy use https://github.com/Azure/azure-quickstart-templates/blob/master/demos/monitor-servicehealth-alert/azuredeploy.json and replace the emailReceivers part with:
