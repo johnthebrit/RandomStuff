@@ -110,7 +110,7 @@ foreach ($sub in $subs)
                         if($groupsToSkip -notcontains $member.DisplayName)
                         {
                             Write-Verbose "Group found $($member.DisplayName) - Expanding"
-                            $groupMembers = Get-AzADGroupMember -GroupDisplayName $member.DisplayName
+                            $groupMembers = Get-AzADGroupMember -GroupObjectId $member.ObjectId
                             $emailsToAdd += $groupmembers | Where-Object {$_.Mail -ne $null} | select-object -ExpandProperty Mail #we only add if has an email attribute
                         }
                     }
