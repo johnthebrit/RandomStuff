@@ -57,7 +57,7 @@ $CheckForPeriod = $false
 $pathToFiles = "C:\Users\john\OneDrive\Captions\Text"
 $pathForOutput = "C:\Users\john\OneDrive\Captions\Output"
 $filterForFiles = "*.txt"
-[int]$wordLimit = 1000 # will process around 1000 words (next period character) at a time
+[int]$wordLimit = 2000 # will process around 2000 words (next period character) at a time
 
 $openai = @{
     api_key     = (Get-Secret -Name OpenAIKey -AsPlainText) # one of the 2 keys for your OpenAI resource
