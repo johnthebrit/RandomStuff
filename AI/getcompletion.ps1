@@ -100,7 +100,7 @@ foreach($file in $files)
 
         # Check if word limit is reached
         if ($wordCount -ge $WordLimit) {
-            # Find the nearest period
+            # Find the nearest period or just stop if not checking for period characters.
             if (($word -match "\.") -or !$CheckForPeriod)
             {
                 # Output the segment
