@@ -58,10 +58,10 @@ function Download-Subtitles {
 }
 
 # Main Script
-#$videoIds = Get-VideoIdsFromChannel -channelId $channelId -apiKey $apiKey
-$videoIds | ConvertTo-Json -Depth 5 | Out-File -FilePath "S:\Captions\videoids.json"
+$videoIds = Get-VideoIdsFromChannel -channelId $channelId -apiKey $apiKey
+$videoIds | ConvertTo-Json -Depth 5 | Out-File -FilePath "C:\Users\john\OneDrive\Captions\videoids.json"
 
-$videoIds = Get-Content -Path "S:\Captions\videoids.json" | ConvertFrom-Json
+<#$videoIds = Get-Content -Path "S:\Captions\videoids.json" | ConvertFrom-Json
 $videoIdPosition = [int](Get-Content -Path "S:\Captions\videoidposition.txt")
 $videoProcessedCount = 0
 $batchSize = 20
@@ -72,4 +72,4 @@ for ($i = $videoIdPosition; $i -lt ($videoIdPosition+$batchSize); $i++) {
 }
 $videoIdPosition = $i
 
-$videoIdPosition | Out-File -FilePath "S:\Captions\videoidposition.txt"
+$videoIdPosition | Out-File -FilePath "S:\Captions\videoidposition.txt"#>
