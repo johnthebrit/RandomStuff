@@ -48,6 +48,11 @@ $UriString = "https://management.azure.com/subscriptions/$subID/providers/Micros
 $r = Invoke-RestMethod -Uri $UriString -Method Get -Headers $authHeader
 $r.value
 
+#Example with created and changed time for resources
+$UriString = "https://management.azure.com/subscriptions/$subid/resourceGroups/RG-DEMOVM/resources?api-version=2023-07-01&`$expand=createdTime,changedTime"
+$r = Invoke-RestMethod -Uri $UriString -Method Get -Headers $authHeader
+$r.value
+
 #Can token get for other audiences
 $accessToken = (Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com").Token #MS Graph audience
 $authHeader = @{
