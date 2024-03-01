@@ -20,32 +20,43 @@ $blobs = Get-AzStorageBlob -Container $storageContainer -Context $storageContext
 foreach ($blob in $blobs)
 {
     Write-Output "Working on $($blob.name)"
-    $docName = $blob.Name -replace "\.txt$", "" #remove only from end of the string
-    $cleanDocName = $docName -replace '[^a-zA-Z0-9]', ''
 
-    $videoMatch = $null
+    $props = $blob.blobclient.GetProperties()
 
-    $videoDetails.keys | ForEach-Object {
-        $maxLength = [Math]::Min($cleanDocName.Length, $_.Length)
+    if($props.Value.Metadata.DocName -eq $null)
+    {
+        Write-Output "No metadata found, adding"
 
-        # Compare the substrings
-        if ($cleanDocName.Substring(0, $maxLength) -eq $_.Substring(0, $maxLength)) {
-            Write-Host "Found match $($videoDetails.$_)"
-            $videoMatch = $videoDetails.$_
+        $docName = $blob.Name -replace "\.txt$", "" #remove only from end of the string
+        $cleanDocName = $docName -replace '[^a-zA-Z0-9]', ''
+
+        $videoMatch = $null
+
+        $videoDetails.keys | ForEach-Object {
+            $maxLength = [Math]::Min($cleanDocName.Length, $_.Length)
+
+            # Compare the substrings
+            if ($cleanDocName.Substring(0, $maxLength) -eq $_.Substring(0, $maxLength)) {
+                Write-Host "Found match $($videoDetails.$_)"
+                $videoMatch = $videoDetails.$_
+            }
         }
+
+        Write-Output $videoDetails.$docName
+
+        $metadata = New-Object System.Collections.Generic.Dictionary"[String,String]"
+        $metadata.Add("DocName",$docName)
+        if($videoMatch -ne $null)
+        {
+            $metadata.Add("VideoURL","https://youtu.be/$videoMatch")
+        }else
+        {
+            $metadata.Add("VideoURL","https://www.youtube.com/channel/UCpIn7ox7j7bH_OFj7tYouOQ")
+        }
+
+        $blob.BlobClient.SetMetadata($metadata, $null)
     }
-
-    Write-Output $videoDetails.$docName
-
-    $metadata = New-Object System.Collections.Generic.Dictionary"[String,String]"
-    $metadata.Add("DocName",$docName)
-    if($videoMatch -ne $null)
-    {
-        $metadata.Add("VideoURL","https://youtu.be/$videoMatch")
-    }else
-    {
-        $metadata.Add("VideoURL","https://www.youtube.com/channel/UCpIn7ox7j7bH_OFj7tYouOQ")
+    else {
+        Write-Output "Existing metadata found, skipping"
     }
-
-    $blob.BlobClient.SetMetadata($metadata, $null)
 }
