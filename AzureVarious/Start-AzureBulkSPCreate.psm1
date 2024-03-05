@@ -1,11 +1,11 @@
 <#
 Bulk Service Principal and role assignment
-v0.2
+v0.3
 John Savill
 
 Need Azure and Microsoft Graph PowerShell modules
 
-Need to auth for PowerShell Azure module and Microsoft Graph (Connect-MgGraph)
+*** Need to auth for PowerShell Azure module and Microsoft Graph (Connect-MgGraph)
 
 Permissions required:
     Entra:
@@ -19,6 +19,7 @@ Permissions required:
 Change Notes:
 
 .02 3/5/2024 - Checks if SP already exists and also creates the SPs in one phase, then does the rest of actions as next phase
+.03 3/5/2024 - Tweaks to error checking
 #>
 
 function Start-AzureBulkSPCreate
@@ -86,7 +87,6 @@ function Start-AzureBulkSPCreate
         foreach ($subscriptionEntry in $subscriptionList)
         {
             $sp = $null
-            $user = $null
 
             # Create the service principal
             try {
@@ -102,9 +102,8 @@ function Start-AzureBulkSPCreate
             }
             catch {
                 Write-Error "Error creating service principal $($subscriptionEntry.principle_name) : `n $_ "
-                $statusGood = $false
             }
-        }
+        } #for each entry in list
 
         Write-Output "*** Creating service principals complete."
 
@@ -115,9 +114,18 @@ function Start-AzureBulkSPCreate
         Write-Output "*** Assigning service principal permissions and roles."
         foreach ($subscriptionEntry in $subscriptionList)
         {
+            $sp = $null
+            $user = $null
+            $statusGood = $true #need to reset for each pass
+
             # Get the SP
             try {
                 $sp = Get-AzADServicePrincipal -DisplayName $subscriptionEntry.principle_name
+                if($null -eq $sp)
+                {
+                    Write-Error "Could not find service principal $($subscriptionEntry.principle_name)"
+                    $statusGood = $false
+                }
             }
             catch {
                 Write-Error "Could not find service principal $($subscriptionEntry.principle_name) : `n $_ "
@@ -127,6 +135,11 @@ function Start-AzureBulkSPCreate
             # Get the user
             try {
                 $user = Get-AzADUser -UserPrincipalName $subscriptionEntry.principleEmail
+                if($null -eq $user)
+                {
+                    Write-Error "Could not get user $($subscriptionEntry.principleEmail)"
+                    $statusGood = $false
+                }
             }
             catch {
                 Write-Error "Could not get user $($subscriptionEntry.principleEmail) : `n $_ "
@@ -160,8 +173,7 @@ function Start-AzureBulkSPCreate
                     $statusGood = $false
                 }
             }
-
-        }
+        } #for each entry in list
         Write-Output "*** Assigning service principal permissions and roles complete."
     } #if status good
 }
