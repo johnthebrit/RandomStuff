@@ -3,8 +3,8 @@
 #pip install azure-identity azure-keyvault-secrets
 
 #Get your endpoints setup
-#setx AZ_AKS_VAULT YOURVAULTURL
-#setx AZ_AKS_SECRET YOURSECRETNAME
+#setx AKV_VAULTURL YOURVAULTURL
+#setx AKV_SECRETNAME YOURSECRETNAME
 
 from msrest.authentication import CognitiveServicesCredentials
 from azure.identity import DefaultAzureCredential
@@ -18,11 +18,11 @@ import time
 credential = DefaultAzureCredential()
 
 # Connect to the Azure Key Vault
-key_vault_url = os.environ["AZ_AKS_VAULT"]
+key_vault_url = os.environ["AKV_VAULTURL"]
 client = SecretClient(vault_url=key_vault_url, credential=credential)
 
 # Retrieve the secret
-secret_name = os.environ["AZ_AKS_SECRET"]
+secret_name = os.environ["AKV_SECRETNAME"]
 secret = client.get_secret(secret_name)
 
 # Store the value of the secret into a variable
