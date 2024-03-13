@@ -5,7 +5,7 @@ John Savill
 
 Need Azure and Microsoft Graph PowerShell modules
 
-*** Need to auth for PowerShell Azure module and Microsoft Graph (Connect-MgGraph)
+*** Need to auth for PowerShell Azure module (Connect-AzAccount) and Microsoft Graph (Connect-MgGraph -TenantID)
 
 Permissions required:
     Entra:
