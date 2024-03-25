@@ -32,6 +32,13 @@ Param (
 
 Import-Module Microsoft.Graph.Applications
 
+#Get a token
+$accessToken = (Get-AzAccessToken -ResourceUrl "https://graph.microsoft.com").Token #MS Graph audience
+$authHeader = @{
+    'Content-Type'='application/json'
+    'Authorization'='Bearer ' + $accessToken
+}
+
 $statusGood = $true
 
 #Silence warnings about changing cmdlets
@@ -153,7 +160,11 @@ if($statusGood)
                     "@odata.id" = "https://graph.microsoft.com/v1.0/directoryObjects/$($user.Id)"
                 }
 
+                #Set on the Enterprise App
                 New-MgServicePrincipalOwnerByRef -ServicePrincipalId $sp.Id -BodyParameter $params
+                #Set on the App Registration
+                $AppRegObjID = Get-MgApplicationByAppId -AppId $sp.appid
+                New-MgApplicationOwnerByRef -ApplicationId $AppRegObjID.Id -BodyParameter $params
             }
             catch {
                 Write-Error "Unable to set owner $($subscriptionEntry.principleEmail) for $($subscriptionEntry.principle_name): `n $_ "
