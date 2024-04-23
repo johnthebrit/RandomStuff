@@ -160,3 +160,9 @@ Resources
 	| where type =~ 'Microsoft.ResourceHealth/events'
 	| extend eventType = tostring(properties.EventType), status = properties.Status, description = properties.Title, trackingId = properties.TrackingId, summary = properties.Summary, priority = properties.Priority, impactStartTime = properties.ImpactStartTime, impactMitigationTime = todatetime(tolong(properties.ImpactMitigationTime))
 | where properties.Status == 'Active' and impactStartTime > ago(40d)
+
+#View the LastOwnershipUpdateTime of managed disks
+resources
+| where type == "microsoft.compute/disks"
+| where properties.diskState == "Unattached" and todatetime(properties.LastOwnershipUpdateTime) < ago(60d)
+| project name, id, diskState = properties.diskState, LastUpdateTime = format_datetime(todatetime(properties.LastOwnershipUpdateTime), "dd-MM-yyyy")
