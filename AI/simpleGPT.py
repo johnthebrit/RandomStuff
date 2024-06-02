@@ -34,13 +34,15 @@ while True:
         messages=messages_array
     )
 
+    #Track the token usage counts
     prompt_token_count += completion.usage.prompt_tokens
     completion_token_count += completion.usage.completion_tokens
 
+    #Store and output the completion message
     completion_message = completion.choices[0].message.content
     print("> " + completion_message + "\n")
 
-    #Add what the response is as assistant message
+    #Add what the response is as assistant message to our list
     messages_array.append({"role": "assistant", "content": completion_message})
 
     # print(completion.to_json())
