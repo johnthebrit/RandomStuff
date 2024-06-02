@@ -13,7 +13,7 @@ client = AzureOpenAI(
     api_version="2024-02-01"
 )
 
-#Array for our messages
+#Dictionary list for our messages
 messages_array = [{"role": "system", "content": "You are an AI assistant that helps people find information."}]
 
 #Initialize variables for the prompt and completion tokens
