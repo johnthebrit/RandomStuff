@@ -31,6 +31,7 @@ while True:
     completion = client.chat.completions.create(
         model=deployment,
         max_tokens=500,
+        temperature=0.3,
         messages=messages_array
     )
 
@@ -50,8 +51,7 @@ while True:
 print("Have a great day!")
 print("Prompt tokens " + str(prompt_token_count) + ", completion tokens " + str(completion_token_count))
 
-'''
+
 print("Your history was:\n")
 for msg_entry in messages_array:
     print(msg_entry)
-'''
