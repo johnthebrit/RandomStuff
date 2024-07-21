@@ -15,7 +15,7 @@ function Send-GPTForCompletion
         throw "Environment variable CHAT_COMPLETIONS_DEPLOYMENT_NAME not found."
     }
 
-    $ai_url = $endpoint + "openai/deployments/" + $deployment_name + "/chat/completions?api-version=2024-02-01"
+    $ai_url = $endpoint + "openai/deployments/" + $deployment_name + "/chat/completions?api-version=2024-06-01"
 
     #Get an Entra ID token
     $token = Get-AzAccessToken -ResourceUrl "https://cognitiveservices.azure.com/" #need a token for cognitive services
@@ -48,6 +48,9 @@ function Send-GPTForCompletion
 
  .Description
   Returns the completion from GPT based on the string given including a limited message history.
+  You must have defined two environment variables and authenticated to Azure.
+  $env:CHAT_COMPLETIONS_DEPLOYMENT_NAME = "gpt-4o"
+  $env:AZURE_OPENAI_ENDPOINT = "https://yourendpoint.openai.azure.com/"
 
  .Parameter Clear
   Clears the message history.
@@ -82,12 +85,14 @@ function Get-GPTCompletion
 
     process {
 
+        #Where are history will be stored
         $filePath = Join-Path -Path $env:LocalAppData -ChildPath "savgpt\gptcompletedata.json"
         $folderPath = Split-Path -Path $filePath -Parent
 
-        $messages = @()
+        $messages = @() #Create an empty array
         $historyToKeep = 5
 
+        #Check if our path exists and ifnot create it
         if (-not (Test-Path -Path $folderPath))
         {
             New-Item -Path $folderPath -ItemType Directory | Out-Null
@@ -99,6 +104,7 @@ function Get-GPTCompletion
             $Clear = $true
         }
 
+        #If no history set the system message
         if ($Clear) {
             $messages += [ordered]@{
                 role = 'system'
@@ -106,10 +112,12 @@ function Get-GPTCompletion
                 }
         }
         else {
+            #Load in the history from JSON file
             $messages = Get-Content -Path $filePath | ConvertFrom-Json
         }
 
         $messageCount = $messages.Count
+        #Do we need to trim messages based on history desired memory
         if($messageCount -gt (($historyToKeep*2)+1))
         {
             Write-Debug "Trimming history"
@@ -125,11 +133,13 @@ function Get-GPTCompletion
         # Combine the string array into a single string
         $PromptString = $PromptStringArray -join ' '
 
+        #If want the clipboard add to the user prompt as additional information
         if ($UseClipboard) {
             $clipboardContent = Get-Clipboard
             $PromptString += "`nADDITIONAL INFORMATION:`n$clipboardContent"
         }
 
+        #We use ordered to keep role in front of content
         $messages += [ordered]@{
             role = 'user'
             content = $PromptString
@@ -137,7 +147,7 @@ function Get-GPTCompletion
 
         $resp = Send-GPTForCompletion $messages
 
-        if($resp -ne $null)
+        if($null -ne $resp)
         {
             #add to history
             $messages += [ordered]@{
