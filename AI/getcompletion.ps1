@@ -37,8 +37,7 @@ function Edit-TextSegment {
     $body = [ordered]@{
         messages = $messages
         max_tokens = 4096
-        temperature = 0.7
-        top_p = 0.7
+        temperature = 0.3
     } | ConvertTo-Json
 
     # Send a request to generate an answer
@@ -63,7 +62,7 @@ $openai = @{
     api_key     = (Get-Secret -Name OpenAIKey -AsPlainText) # one of the 2 keys for your OpenAI resource
     api_base    = (Get-Secret -Name OpenAIEndpoint -AsPlainText) # your endpoint, e.g. https://RESOURCE_NAME.openai.azure.com/
     api_version = '2023-05-15' # Curren API at time of creation
-    name        = 'gpt4' #This will correspond to the custom name you chose for your deployed model
+    name        = 'gpt-4o' #This will correspond to the custom name you chose for your deployed model
  }
 
  $headers = [ordered]@{
