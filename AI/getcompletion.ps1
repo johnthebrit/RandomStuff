@@ -36,7 +36,7 @@ function Edit-TextSegment {
     # Adjust these values to fine-tune completions
     $body = [ordered]@{
         messages = $messages
-        max_tokens = 4096
+        max_tokens = 16384
         temperature = 0.3
     } | ConvertTo-Json
 
@@ -61,7 +61,7 @@ $filterForFiles = "*.srt"
 $openai = @{
     api_key     = (Get-Secret -Name OpenAIKey -AsPlainText) # one of the 2 keys for your OpenAI resource
     api_base    = (Get-Secret -Name OpenAIEndpoint -AsPlainText) # your endpoint, e.g. https://RESOURCE_NAME.openai.azure.com/
-    api_version = '2023-05-15' # Curren API at time of creation
+    api_version = '2024-08-01-preview' # Current API at time of creation
     name        = 'gpt-4o' #This will correspond to the custom name you chose for your deployed model
  }
 
