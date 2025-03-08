@@ -45,31 +45,40 @@ def compute_sha256(file_path):
 
 def main(file_path):
     # Compute SHA256 digest of the file
-    digest = compute_sha256(file_path)
+    current_digest = compute_sha256(file_path)
     file_name = os.path.basename(file_path)
 
-    print(f"Digest for file is: {digest}")
+    print(f"Digest for file is: {current_digest}")
 
-    # The method begin_create_ledger_entry returns a poller that
-    # we can use to wait for the transaction to be committed
-    create_entry_poller = ledger_client.begin_create_ledger_entry(
-        {"contents": json.dumps({"file_name": file_name, "digest": digest})}
-    )
-    create_entry_result = create_entry_poller.result()
+    # Fetch the ledger entry for the given file name
+    entries = ledger_client.list_ledger_entries()
+    ledger_digest = None
+    for entry in entries:
+        try:
+            contents = json.loads(entry["contents"])
+        except json.JSONDecodeError:
+            # Skip this entry if the content is not valid JSON
+            continue
 
-    # The method begin_get_receipt returns a poller that
-    # we can use to wait for the receipt to be available by the system
-    get_receipt_poller = ledger_client.begin_get_receipt(
-        create_entry_result["transactionId"]
-    )
-    get_receipt_result = get_receipt_poller.result()
+        if contents["file_name"] == file_name:
+            ledger_digest = contents["digest"]
+            transaction_id = entry["transactionId"]
+            print(f"Digest for file from ledger is: {ledger_digest}")
+            print(f"Transaction ID from ledger is: {transaction_id}")
+            break
 
-    # Save fetched receipt into a file
-    with open("receipt.json", "w") as receipt_file:
-        receipt_file.write(json.dumps(get_receipt_result, sort_keys=True, indent=2))
+    if ledger_digest is None:
+        print(f"No ledger entry found for file: {file_name}")
+        return
+
+    # Compare the current digest with the ledger digest
+    if current_digest == ledger_digest:
+        print("The digests match! The file has not been altered.")
+    else:
+        print("The digests do not match! The file may have been modified.")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Write file name and digest to Azure Confidential Ledger")
+    parser = argparse.ArgumentParser(description="Read ledger digest for a file and compare with current digest")
     parser.add_argument("file_path", help="Path to the file to compute the digest for")
     args = parser.parse_args()
 
