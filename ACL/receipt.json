@@ -1,0 +1,25 @@
+{
+  "receipt": {
+    "cert": "-----BEGIN CERTIFICATE-----\nMIIB7zCCAZagAwIBAgIRAJUwHYITVkrv7DysPih64OMwCgYIKoZIzj0EAwIwFjEU\nMBIGA1UEAwwLQ0NGIFNlcnZpY2UwHhcNMjUwMzA4MTQwNTE0WhcNMjUwNjA2MTQw\nNTEzWjATMREwDwYDVQQDDAhDQ0YgTm9kZTBZMBMGByqGSM49AgEGCCqGSM49AwEH\nA0IABK8Xag9yZ1RelhlxaiBgfldIkoI0XOFmWaLEgET6Jb+brP1AYw/YZtvJ8wVQ\nnWLqtfeLX+abrBITihwIYJ7VkwujgccwgcQwDAYDVR0TAQH/BAIwADAdBgNVHQ4E\nFgQU2dLs3/KZgp8xwdjFFtpxkCedkwYwHwYDVR0jBBgwFoAUlEuPEdUp+kLGUK99\nGJZc9sH1z50wdAYDVR0RBG0wa4IMc2F2aWxsbGVkZ2VyhwQK8AtRgipzYXZpbGxs\nZWRnZXIuY29uZmlkZW50aWFsLWxlZGdlci5henVyZS5jb22CKXNhdmlsbGxlZGdl\nci5wcm9kLnByaXZhdGUuYXp1cmVsZWRnZXIuY29tMAoGCCqGSM49BAMCA0cAMEQC\nIDdjTyYTO8Bz59ixCSULPujHCKSKf6MZawcFhvwFju2zAiB4hpmTuyntVDIAWMsQ\nJtrp1PpjT17QxAk9riRRVBqB2Q==\n-----END CERTIFICATE-----\n",
+    "leafComponents": {
+      "claimsDigest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "commitEvidence": "ce:2.37:34a50e1b4b7f241b225e55833588a07e2383327c1c315a0d348f715d04cc95e8",
+      "writeSetDigest": "ef47baa08ad64b2db97fccb71b50ca8508d6e76e130e2964cc45b9157abc4e03"
+    },
+    "nodeId": "d4bd4936f367f86ec82393291791d8bf1c2f1393d2a7f6e035a6b809a90bf3fa",
+    "proof": [
+      {
+        "left": "44cbb9c553f585a7da10cb954f9f4afc778b451dae961f8b9dc5e311ba6ce2f3"
+      },
+      {
+        "left": "a4b50540cd476a165963a0c4ee64c786f26f55a72757828f9dd9c127eddfd083"
+      },
+      {
+        "left": "78f7c17f82032a2cf6af196ddf7cb42436d6b8b276e83131724b215e148a19a5"
+      }
+    ],
+    "signature": "MEYCIQCMmMZn/kePqqGtlwoBweCYt5hsHH9WnF5biPBoWZ1uNwIhAIW3HAd5yKrVa/Am68YPNdpBDG/7O1knL4KwybEqgDzR"
+  },
+  "state": "Ready",
+  "transactionId": "2.37"
+}
