@@ -7,7 +7,7 @@ John Savill, https://savilltech.net
 #Main body of function
 
 $pathToFiles = "C:\Users\john\OneDrive\Captions\Raw"
-$pathForOutput = "C:\Users\john\OneDrive\Captions\Output"
+$pathForOutput = "C:\Users\john\OneDrive\Captions\Raw"
 $filterForFiles = "*.srt"
 
 $files = Get-ChildItem -Path $pathToFiles -Filter $filterForFiles
