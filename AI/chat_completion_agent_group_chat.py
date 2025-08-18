@@ -46,7 +46,7 @@ Don't waste time with chit chat.
 Consider suggestions when refining an idea.
 """
 
-TASK = "a slogan for a new line of electric cars."
+TASK = "a slogan for a new line of premium cars."
 
 
 async def main():
