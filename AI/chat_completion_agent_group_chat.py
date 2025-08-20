@@ -11,7 +11,11 @@ from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
 The following sample demonstrates how to create a simple, agent group chat that
 utilizes An Art Director Chat Completion Agent along with a Copy Writer Chat
 Completion Agent to complete a task.
+
+The semantic kernel is using default auth to connect to the Azure OpenAI service (so make sure you have authenticated) using connect-azaccount etc
+Then using environment variables for AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_DEPLOYMENTNAME
 """
+
 
 
 def _create_kernel_with_chat_completion(service_id: str) -> Kernel:
