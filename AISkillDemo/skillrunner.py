@@ -1,34 +1,119 @@
+import json
 import os
-import textwrap
+import sys
 import urllib.request
 import xml.etree.ElementTree as ET
 
 try:
     from openai import OpenAI
-except ImportError:  # Optional dependency for the AI summary
+except ImportError:
     OpenAI = None
 
-
-CHANNEL_ID = "UCpIn7ox7j7bH_OFj7tYouOQ"  # John Savill's Technical Training
-RSS_FEED_URL = f"https://www.youtube.com/feeds/videos.xml?channel_id={CHANNEL_ID}"
 
 endpoint = "https://foundryagentproject-resource.services.ai.azure.com/openai/v1"
 deployment_name = "gpt-5.4-mini"
 
+SKILLS = {
+    "get-latest-videos": {
+        "path": os.path.join("skills", "get-latest-videos", "skill.md"),
+        "summary": (
+            "Retrieve the 10 most recent public videos from a YouTube channel using the public RSS feed "
+            "and return a markdown table plus a short 'Suggested summary' paragraph."
+        ),
+    }
+}
+
 
 def _get_openai_client():
     api_key = os.getenv("AZURE_OPENAI_KEY")
-    if not api_key or OpenAI is None:
+    if not api_key:
+        return None
+    if OpenAI is None:
         return None
     return OpenAI(base_url=endpoint, api_key=api_key)
 
 
-def fetch_latest_videos_from_rss(feed_url: str, limit: int = 10):
-    """Fetch and parse the YouTube channel RSS feed."""
-    with urllib.request.urlopen(feed_url, timeout=20) as resp:
-        xml_bytes = resp.read()
+def _missing_requirements_message() -> str:
+    missing = []
+    if OpenAI is None:
+        missing.append("Python package 'openai'")
+    if not os.getenv("AZURE_OPENAI_KEY"):
+        missing.append("environment variable AZURE_OPENAI_KEY")
+    if not missing:
+        return ""
 
-    root = ET.fromstring(xml_bytes)
+    lines = [
+        "Missing requirements for tool-driven execution:",
+        "- " + "\n- ".join(missing),
+        "",
+        "Fix:",
+        "- Install package: python -m pip install openai",
+        "- Set key in this shell (PowerShell): $env:AZURE_OPENAI_KEY = '<your key>'",
+    ]
+    return "\n".join(lines)
+
+
+def load_skill_text(path: str) -> str:
+    with open(path, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def _truncate(text: str, limit: int) -> str:
+    if text is None:
+        return ""
+    if len(text) <= limit:
+        return text
+    return text[:limit] + f"\n... (truncated, {len(text)} chars total)"
+
+
+def _trace_enabled() -> bool:
+    return ("--trace" in sys.argv) or (os.getenv("SKILL_TRACE") == "1")
+
+
+def _trace_print(title: str, body: str = "", *, limit: int = 2000):
+    if not _trace_enabled():
+        return
+    print("\n" + "=" * 80)
+    print(title)
+    if body:
+        print("-" * 80)
+        print(_truncate(body, limit))
+
+
+def _trace_messages(messages, *, limit: int = 2000):
+    if not _trace_enabled():
+        return
+    printable = []
+    for i, m in enumerate(messages):
+        role = m.get("role")
+        content = m.get("content")
+        if content is None:
+            content = ""
+        entry = f"[{i}] role={role}\n{content}"
+        if "tool_calls" in m:
+            entry += "\n(tool_calls present)"
+        if "tool_call_id" in m:
+            entry += f"\n(tool_call_id={m['tool_call_id']})"
+        printable.append(entry)
+    _trace_print("REQUEST MESSAGES", "\n\n".join(printable), limit=limit)
+
+
+def tool_fetch_url(url: str) -> str:
+    req = urllib.request.Request(
+        url,
+        headers={
+            "User-Agent": "AISkillDemo/skillrunner (python urllib)"
+        },
+        method="GET",
+    )
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        raw = resp.read()
+    return raw.decode("utf-8", errors="replace")
+
+
+def tool_parse_youtube_rss(xml_text: str, limit: int = 10):
+    """Parse YouTube channel RSS feed XML into a compact list of videos."""
+    root = ET.fromstring(xml_text)
     ns = {
         "atom": "http://www.w3.org/2005/Atom",
         "yt": "http://www.youtube.com/xml/schemas/2015",
@@ -38,7 +123,8 @@ def fetch_latest_videos_from_rss(feed_url: str, limit: int = 10):
     videos = []
     for entry in root.findall("atom:entry", ns)[:limit]:
         title = (entry.findtext("atom:title", default="", namespaces=ns) or "").strip()
-        published = (entry.findtext("atom:published", default="", namespaces=ns) or "").strip()
+        published_full = (entry.findtext("atom:published", default="", namespaces=ns) or "").strip()
+        published = published_full[:10] if published_full else ""
         video_id = (entry.findtext("yt:videoId", default="", namespaces=ns) or "").strip()
         description = (
             entry.findtext("media:group/media:description", default="", namespaces=ns) or ""
@@ -53,7 +139,7 @@ def fetch_latest_videos_from_rss(feed_url: str, limit: int = 10):
         videos.append(
             {
                 "title": title,
-                "published": published[:10] if published else "",
+                "published": published,
                 "url": url,
                 "description": description,
             }
@@ -62,63 +148,202 @@ def fetch_latest_videos_from_rss(feed_url: str, limit: int = 10):
     return videos
 
 
-def format_videos_as_markdown_table(videos):
-    lines = ["| # | Title | Published | Link |", "|---|-------|-----------|------|"]
-    for idx, v in enumerate(videos, start=1):
-        safe_title = (v.get("title") or "").replace("|", "\\|")
-        published = v.get("published") or ""
-        url = v.get("url") or ""
-        lines.append(f"| {idx} | {safe_title} | {published} | {url} |")
-    return "\n".join(lines)
+def tool_list_skills():
+    return [{"name": name, "summary": meta["summary"]} for name, meta in SKILLS.items()]
 
 
-def build_suggested_summary(videos):
+def tool_get_skill_text(skill_name: str) -> str:
+    if skill_name not in SKILLS:
+        raise ValueError(f"Unknown skill: {skill_name}")
+    return load_skill_text(SKILLS[skill_name]["path"])
+
+
+TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "list_skills",
+            "description": "List available skills (name + short summary).",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_skill_text",
+            "description": "Get the full text of a skill by name.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "skill_name": {"type": "string", "description": "The skill name to load."},
+                },
+                "required": ["skill_name"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "fetch_url",
+            "description": "Fetch a URL and return the response body as UTF-8 text.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string", "description": "The URL to fetch."},
+                },
+                "required": ["url"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "parse_youtube_rss",
+            "description": "Parse a YouTube RSS feed XML string and return up to N videos.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "xml_text": {"type": "string", "description": "RSS feed XML."},
+                    "limit": {"type": "integer", "description": "Max entries to return.", "default": 10},
+                },
+                "required": ["xml_text"],
+                "additionalProperties": False,
+            },
+        },
+    },
+]
+
+
+def run_skill_with_tools(user_request: str) -> str:
     client = _get_openai_client()
     if client is None:
-        return "(AI summary unavailable: set AZURE_OPENAI_KEY to enable.)"
+        raise RuntimeError(_missing_requirements_message() or "Missing requirements.")
 
-    prompt = textwrap.dedent(
-        """
-        You are generating the "Suggested summary" for a table of the latest 10 videos from a YouTube channel.
-        Write ONE short paragraph summarizing the themes across the videos.
-        Don't invent topics that aren't implied by the titles/descriptions.
-        """
-    ).strip()
-
-    # Keep the model input small but useful.
-    compact = [
+    messages = [
         {
-            "title": v.get("title", ""),
-            "description": (v.get("description", "") or "")[:240],
-        }
-        for v in videos
+            "role": "system",
+            "content": (
+                "You are a helpful assistant with access to tools.\n"
+                "If the user's request can be fulfilled by an available skill, you should CHOOSE to use it:\n"
+                "- First call list_skills to discover what skills exist.\n"
+                "- If a skill is relevant, call get_skill_text(skill_name) to retrieve the full instructions.\n"
+                "- Then follow that skill's steps exactly.\n"
+                "You can only fetch live web data using the provided tools (e.g., fetch_url).\n"
+                "Do not invent videos, dates, or links.\n"
+                "When you use a skill, return output in the skill's required format."
+            ),
+        },
+        {"role": "user", "content": user_request},
     ]
 
-    completion = client.chat.completions.create(
-        model=deployment_name,
-        messages=[
-            {"role": "user", "content": prompt},
-            {"role": "user", "content": f"Videos (most recent first):\n{compact}"},
-        ],
-    )
-    return (completion.choices[0].message.content or "").strip()
+    tool_impl = {
+        "list_skills": lambda args: tool_list_skills(),
+        "get_skill_text": lambda args: tool_get_skill_text(args["skill_name"]),
+        "fetch_url": lambda args: tool_fetch_url(args["url"]),
+        "parse_youtube_rss": lambda args: tool_parse_youtube_rss(args["xml_text"], int(args.get("limit", 10))),
+    }
+
+    for _ in range(16):
+        _trace_messages(messages)
+        try:
+            resp = client.chat.completions.create(
+                model=deployment_name,
+                messages=messages,
+                tools=TOOLS,
+                tool_choice="auto",
+            )
+        except TypeError as e:
+            raise RuntimeError(
+                "Your OpenAI client library may not support tool calling (missing 'tools' argument support). "
+                "Try upgrading: python -m pip install --upgrade openai"
+            ) from e
+        except Exception as e:
+            raise RuntimeError(
+                "Model call failed. If you're using an Azure/Foundry endpoint, confirm this deployment supports tool calling/function calling. "
+                "If it doesn't, option-3 execution can't run as-is."
+            ) from e
+        msg = resp.choices[0].message
+
+        _trace_print("MODEL RESPONSE (assistant.content)", msg.content or "")
+
+        tool_calls = getattr(msg, "tool_calls", None)
+        if tool_calls:
+            if _trace_enabled():
+                for tc in tool_calls:
+                    _trace_print(
+                        f"MODEL TOOL CALL -> {tc.function.name}",
+                        f"arguments: {tc.function.arguments}",
+                        limit=4000,
+                    )
+
+            # Record the assistant message that requested tool calls.
+            messages.append(
+                {
+                    "role": "assistant",
+                    "content": msg.content or "",
+                    "tool_calls": [
+                        {
+                            "id": tc.id,
+                            "type": "function",
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
+                            },
+                        }
+                        for tc in tool_calls
+                    ],
+                }
+            )
+
+            for tc in tool_calls:
+                name = tc.function.name
+                if name not in tool_impl:
+                    raise RuntimeError(f"Model requested unknown tool: {name}")
+
+                args = json.loads(tc.function.arguments or "{}")
+                result = tool_impl[name](args)
+
+                if _trace_enabled():
+                    # Avoid printing enormous RSS XML/tool output; trim for readability.
+                    if isinstance(result, str):
+                        preview = result
+                    else:
+                        preview = json.dumps(result, ensure_ascii=False)
+                    _trace_print(f"TOOL RESULT <- {name}", preview, limit=2000)
+
+                messages.append(
+                    {
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "content": json.dumps(result, ensure_ascii=False),
+                    }
+                )
+
+            continue
+
+        return (msg.content or "").strip()
+
+    raise RuntimeError("Tool-call loop exceeded maximum iterations.")
 
 
 def run_demo():
-    print("=== Get Latest Videos Demo ===")
-    print(f"Channel ID: {CHANNEL_ID}")
-    print(f"RSS: {RSS_FEED_URL}\n")
+    print("=== Skill Runner (Tool-Driven) Demo ===")
+    if _trace_enabled():
+        print("Trace mode: ON (shows prompts, tool calls, tool results)")
+    else:
+        print("Trace mode: OFF (add --trace or set SKILL_TRACE=1)")
 
-    print("Fetching latest videos...")
-    videos = fetch_latest_videos_from_rss(RSS_FEED_URL, limit=10)
+    # Generic user request; the model must discover and choose a skill.
+    user_request = "show me my latest youtube videos"
 
-    if not videos:
-        print("Could not retrieve the latest videos (RSS returned no entries).")
-        return
-
-    print("\n" + format_videos_as_markdown_table(videos) + "\n")
-    print("## Suggested summary\n")
-    print(build_suggested_summary(videos))
+    output = run_skill_with_tools(user_request)
+    print(output)
 
 
 if __name__ == "__main__":
