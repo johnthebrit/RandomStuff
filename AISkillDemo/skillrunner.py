@@ -64,39 +64,110 @@ def _truncate(text: str, limit: int) -> str:
         return ""
     if len(text) <= limit:
         return text
-    return text[:limit] + f"\n... (truncated, {len(text)} chars total)"
+    # Preserve both the beginning and end for better debugging context.
+    # Keep ~70% head and ~30% tail (at least 200 chars if possible).
+    head_len = max(200, int(limit * 0.7))
+    tail_len = max(200, limit - head_len)
+    if head_len + tail_len > limit:
+        # In case min clamps overshoot.
+        head_len = max(0, limit - tail_len)
+    head = text[:head_len]
+    tail = text[-tail_len:] if tail_len > 0 else ""
+    return (
+        head
+        + f"\n\n... (truncated, {len(text)} chars total; showing head+tail) ...\n\n"
+        + tail
+    )
 
 
 def _trace_enabled() -> bool:
     return ("--trace" in sys.argv) or (os.getenv("SKILL_TRACE") == "1")
 
 
-def _trace_print(title: str, body: str = "", *, limit: int = 2000):
+def _trace_print(title: str, body: str = "", *, limit: int = 2000, color=None):
     if not _trace_enabled():
         return
-    print("\n" + "=" * 80)
-    print(title)
+    rule = "=" * 80
+    dash = "-" * 80
+    if color is None:
+        print("\n" + rule)
+        print(title)
+    else:
+        print("\n" + color(rule))
+        print(color(title))
     if body:
-        print("-" * 80)
-        print(_truncate(body, limit))
+        rendered = _truncate(body, limit)
+        if color is None:
+            print(dash)
+            print(rendered)
+        else:
+            print(color(dash))
+            print(color(rendered))
 
 
 def _trace_messages(messages, *, limit: int = 2000):
     if not _trace_enabled():
         return
-    printable = []
+
+    # Print each message as its own section so truncation is per-message,
+    # not across the whole combined transcript.
+    _trace_print("REQUEST MESSAGES (per message)", color=_ansi_gray)
     for i, m in enumerate(messages):
         role = m.get("role")
-        content = m.get("content")
-        if content is None:
-            content = ""
-        entry = f"[{i}] role={role}\n{content}"
+        content = m.get("content") or ""
+        suffix = ""
         if "tool_calls" in m:
-            entry += "\n(tool_calls present)"
+            suffix += "\n(tool_calls present)"
         if "tool_call_id" in m:
-            entry += f"\n(tool_call_id={m['tool_call_id']})"
-        printable.append(entry)
-    _trace_print("REQUEST MESSAGES", "\n\n".join(printable), limit=limit)
+            suffix += f"\n(tool_call_id={m['tool_call_id']})"
+        _trace_print(f"[{i}] role={role}", content + suffix, limit=limit, color=_ansi_gray)
+
+
+def _color_enabled() -> bool:
+    # Respect the NO_COLOR convention. Also avoid emitting ANSI when redirected.
+    if os.getenv("NO_COLOR") is not None:
+        return False
+    try:
+        return sys.stdout.isatty()
+    except Exception:
+        return False
+
+
+def _ansi_orange(text: str) -> str:
+    if not _color_enabled():
+        return text
+    # 24-bit foreground: orange
+    orange = "\x1b[38;2;255;165;0m"
+    reset = "\x1b[0m"
+    return f"{orange}{text}{reset}"
+
+
+def _ansi_gray(text: str) -> str:
+    if not _color_enabled():
+        return text
+    gray = "\x1b[38;2;180;180;180m"  # light gray
+    reset = "\x1b[0m"
+    return f"{gray}{text}{reset}"
+
+
+def _ansi_lightblue(text: str) -> str:
+    if not _color_enabled():
+        return text
+    blue = "\x1b[38;2;120;180;255m"  # light blue
+    reset = "\x1b[0m"
+    return f"{blue}{text}{reset}"
+
+
+def _print_final_output(output: str):
+    # Make the final output visually distinct from trace sections.
+    header = "FINAL OUTPUT"
+    rule = "=" * 80
+    print("\n" + _ansi_orange(rule))
+    print(_ansi_orange(header))
+    print(_ansi_orange(rule))
+    print(_ansi_orange(output.rstrip()) + "\n")
+
+
 def tool_fetch_url(url: str, strip_media_descriptions: bool = False, max_chars: Optional[int] = None) -> str:
     req = urllib.request.Request(
         url,
@@ -245,7 +316,7 @@ def run_skill_with_tools(user_request: str) -> str:
             ) from e
         msg = resp.choices[0].message
 
-        _trace_print("MODEL RESPONSE (assistant.content)", msg.content or "")
+        _trace_print("MODEL RESPONSE (assistant.content)", msg.content or "", color=_ansi_lightblue)
 
         tool_calls = getattr(msg, "tool_calls", None)
         if tool_calls:
@@ -255,6 +326,7 @@ def run_skill_with_tools(user_request: str) -> str:
                         f"MODEL TOOL CALL -> {tc.function.name}",
                         f"arguments: {tc.function.arguments}",
                         limit=4000,
+                        color=_ansi_lightblue,
                     )
 
             # Record the assistant message that requested tool calls.
@@ -290,7 +362,7 @@ def run_skill_with_tools(user_request: str) -> str:
                         preview = result
                     else:
                         preview = json.dumps(result, ensure_ascii=False)
-                    _trace_print(f"TOOL RESULT <- {name}", preview, limit=2000)
+                    _trace_print(f"TOOL RESULT <- {name}", preview, limit=2000, color=_ansi_gray)
 
                 messages.append(
                     {
@@ -318,7 +390,7 @@ def run_demo():
     user_request = "show me my latest youtube videos"
 
     output = run_skill_with_tools(user_request)
-    print(output)
+    _print_final_output(output)
 
 
 if __name__ == "__main__":
