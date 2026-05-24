@@ -16,7 +16,7 @@ deployment_name = "gpt-5.4-mini"
 
 SKILLS = {
     "get-latest-videos": {
-        "path": os.path.join("skills", "get-latest-videos", "skill.md"),
+        "path": os.path.join("skills", "get-latest-videos", "SKILL.md"),
         "summary": (
             "Retrieve the 10 most recent public videos from a YouTube channel using the public RSS feed "
             "and return a markdown table plus a short 'Suggested summary' paragraph."

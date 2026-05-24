@@ -1,3 +1,9 @@
+---
+name: get-latest-videos
+description: Retrieve the 10 most recent public videos from John Savill's Technical Training via the public YouTube RSS feed and return them as a markdown table plus a short "Suggested summary" paragraph. Use when the user asks for the latest/newest/recent YouTube videos or uploads from John Savill's Technical Training / @NTFAQGuy.
+compatibility: Requires internet access to https://www.youtube.com/feeds/videos.xml
+---
+
 # YouTube Recent Videos Skill
 
 ## Purpose
