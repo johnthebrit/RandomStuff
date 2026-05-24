@@ -1,8 +1,9 @@
 import json
 import os
+import re
 import sys
 import urllib.request
-import xml.etree.ElementTree as ET
+from typing import Optional
 
 try:
     from openai import OpenAI
@@ -96,56 +97,32 @@ def _trace_messages(messages, *, limit: int = 2000):
             entry += f"\n(tool_call_id={m['tool_call_id']})"
         printable.append(entry)
     _trace_print("REQUEST MESSAGES", "\n\n".join(printable), limit=limit)
-
-
-def tool_fetch_url(url: str) -> str:
+def tool_fetch_url(url: str, strip_media_descriptions: bool = False, max_chars: Optional[int] = None) -> str:
     req = urllib.request.Request(
         url,
-        headers={
-            "User-Agent": "AISkillDemo/skillrunner (python urllib)"
-        },
+        headers={"User-Agent": "AISkillDemo/skillrunner (python urllib)"},
         method="GET",
     )
     with urllib.request.urlopen(req, timeout=20) as resp:
         raw = resp.read()
-    return raw.decode("utf-8", errors="replace")
 
+    text = raw.decode("utf-8", errors="replace")
 
-def tool_parse_youtube_rss(xml_text: str, limit: int = 10):
-    """Parse YouTube channel RSS feed XML into a compact list of videos."""
-    root = ET.fromstring(xml_text)
-    ns = {
-        "atom": "http://www.w3.org/2005/Atom",
-        "yt": "http://www.youtube.com/xml/schemas/2015",
-        "media": "http://search.yahoo.com/mrss/",
-    }
-
-    videos = []
-    for entry in root.findall("atom:entry", ns)[:limit]:
-        title = (entry.findtext("atom:title", default="", namespaces=ns) or "").strip()
-        published_full = (entry.findtext("atom:published", default="", namespaces=ns) or "").strip()
-        published = published_full[:10] if published_full else ""
-        video_id = (entry.findtext("yt:videoId", default="", namespaces=ns) or "").strip()
-        description = (
-            entry.findtext("media:group/media:description", default="", namespaces=ns) or ""
-        ).strip()
-
-        url = f"https://youtu.be/{video_id}" if video_id else ""
-        if not url:
-            link_el = entry.find("atom:link[@rel='alternate']", ns)
-            if link_el is not None:
-                url = (link_el.get("href") or "").strip()
-
-        videos.append(
-            {
-                "title": title,
-                "published": published,
-                "url": url,
-                "description": description,
-            }
+    # Optional size reduction while keeping XML valid:
+    # Replace large <media:description>...</media:description> blocks with an empty element.
+    if strip_media_descriptions:
+        text = re.sub(
+            r"<media:description\b[^>]*>.*?</media:description>",
+            "<media:description/>",
+            text,
+            flags=re.DOTALL,
         )
 
-    return videos
+    # Optional truncation (may make XML invalid). Only use if you know the returned slice is sufficient.
+    if max_chars is not None and max_chars > 0 and len(text) > max_chars:
+        text = text[:max_chars] + "\n<!-- TRUNCATED -->\n"
+
+    return text
 
 
 def tool_list_skills():
@@ -195,24 +172,17 @@ TOOLS = [
                 "type": "object",
                 "properties": {
                     "url": {"type": "string", "description": "The URL to fetch."},
+                    "strip_media_descriptions": {
+                        "type": "boolean",
+                        "description": "If true, replace <media:description> blocks with empty elements to reduce size.",
+                        "default": False,
+                    },
+                    "max_chars": {
+                        "type": "integer",
+                        "description": "Optional max characters to return (may truncate and make XML invalid).",
+                    },
                 },
                 "required": ["url"],
-                "additionalProperties": False,
-            },
-        },
-    },
-    {
-        "type": "function",
-        "function": {
-            "name": "parse_youtube_rss",
-            "description": "Parse a YouTube RSS feed XML string and return up to N videos.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "xml_text": {"type": "string", "description": "RSS feed XML."},
-                    "limit": {"type": "integer", "description": "Max entries to return.", "default": 10},
-                },
-                "required": ["xml_text"],
                 "additionalProperties": False,
             },
         },
@@ -235,6 +205,8 @@ def run_skill_with_tools(user_request: str) -> str:
                 "- If a skill is relevant, call get_skill_text(skill_name) to retrieve the full instructions.\n"
                 "- Then follow that skill's steps exactly.\n"
                 "You can only fetch live web data using the provided tools (e.g., fetch_url).\n"
+                "When you fetch an RSS feed, you must parse the XML yourself (there is no parsing tool).\n"
+                "For YouTube RSS, prefer calling fetch_url with strip_media_descriptions=true to keep the XML smaller.\n"
                 "Do not invent videos, dates, or links.\n"
                 "When you use a skill, return output in the skill's required format."
             ),
@@ -245,8 +217,11 @@ def run_skill_with_tools(user_request: str) -> str:
     tool_impl = {
         "list_skills": lambda args: tool_list_skills(),
         "get_skill_text": lambda args: tool_get_skill_text(args["skill_name"]),
-        "fetch_url": lambda args: tool_fetch_url(args["url"]),
-        "parse_youtube_rss": lambda args: tool_parse_youtube_rss(args["xml_text"], int(args.get("limit", 10))),
+        "fetch_url": lambda args: tool_fetch_url(
+            args["url"],
+            strip_media_descriptions=bool(args.get("strip_media_descriptions", False)),
+            max_chars=args.get("max_chars"),
+        ),
     }
 
     for _ in range(16):
