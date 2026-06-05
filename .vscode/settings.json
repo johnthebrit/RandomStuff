@@ -9,5 +9,11 @@
     "azureFunctions.projectRuntime": "~4",
     "debug.internalConsoleOptions": "neverOpen",
     "azureFunctions.projectLanguageModel": 2,
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+
+    "powershell.startAutomatically": false,
+    "powershell.integratedConsole.showOnStartup": false,
+    "powershell.integratedConsole.startInBackground": true,
+    "powershell.integratedConsole.suppressStartupBanner": true,
+    "powershell.developer.editorServicesLogLevel": "None"
 }
