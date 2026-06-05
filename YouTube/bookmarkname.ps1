@@ -19,7 +19,8 @@ function Format-BookmarkTime {
         return ('{0:00}:{1:00}:{2:00}' -f $totalHours, $ts.Minutes, $ts.Seconds)
     }
 
-    return ('{0:00}:{1:00}' -f [int]$ts.TotalMinutes, $ts.Seconds)
+    # Use component minutes/seconds to avoid rounding issues (e.g. 59:59.596 -> 60:59)
+    return ('{0:00}:{1:00}' -f $ts.Minutes, $ts.Seconds)
 }
 
 # Load files
@@ -47,9 +48,7 @@ $updated = foreach ($line in $srt) {
 
             if ($null -ne $currentStartTimestamp) {
                 $bookmarkLine = "$(Format-BookmarkTime $currentStartTimestamp) - $title"
-                if ($bookmarkLine -ne '00:00 - Introduction') {
-                    $bookmarkLines.Add($bookmarkLine)
-                }
+                $bookmarkLines.Add($bookmarkLine)
             }
 
             $nameIndex++
