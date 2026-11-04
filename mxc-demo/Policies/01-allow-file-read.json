@@ -1,0 +1,40 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/mxc/main/schemas/stable/mxc-config.schema.1.0.0.json",
+  "version": "1.0.0",
+  "containment": "processcontainer",
+  "process": {
+    "commandLine": "\"C:\\Program Files\\PowerShell\\7\\pwsh.exe\" -NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File \"C:\\Users\\john\\OneDrive\\projects\\GIT\\RandomStuff\\mxc-demo\\Scripts\\Test-MxcBoundary.ps1\"",
+    "cwd": "C:\\Users\\john\\OneDrive\\projects\\GIT\\RandomStuff\\mxc-demo\\Scripts",
+    "timeout": 45000
+  },
+  "filesystem": {
+    "readonlyPaths": [
+      "C:\\Users\\john\\OneDrive\\projects\\GIT\\RandomStuff\\mxc-demo\\Scripts",
+      "C:\\Program Files\\PowerShell\\7",
+      "C:\\Users\\john\\OneDrive\\projects\\GIT\\RandomStuff\\mxc-demo\\Data\\demo.txt"
+    ],
+    "readwritePaths": [],
+    "deniedPaths": []
+  },
+  "network": {
+    "egress": {
+      "default": "deny"
+    },
+    "ingress": {
+      "hostLoopback": "deny",
+      "default": "deny"
+    }
+  },
+  "ui": {
+    "disable": false,
+    "clipboard": "none",
+    "injection": false
+  },
+  "processContainer": {
+    "filesystem": {
+      "enumeratePaths": [
+        "C:\\"
+      ]
+    }
+  }
+}
